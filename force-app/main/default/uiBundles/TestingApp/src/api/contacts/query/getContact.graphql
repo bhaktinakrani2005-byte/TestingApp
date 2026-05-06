@@ -1,0 +1,20 @@
+query getContact ($contactId: ID!) {
+  uiapi {
+    query {
+      Contact(
+        where: { Id: { eq: $contactId } }
+        orderBy: { CreatedDate: { order: DESC } }
+      ) {
+        edges {
+          node {
+            Id
+            Name { value }
+            Email { value }
+            AccountId { value }
+            Title { value }
+          }
+        }
+      }
+    }
+  }
+}
