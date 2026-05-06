@@ -3,15 +3,14 @@ query getContact ($contactId: ID!) {
     query {
       Contact(
         where: { Id: { eq: $contactId } }
-        orderBy: { CreatedDate: { order: DESC } }
       ) {
         edges {
           node {
             Id
-            Name { value }
-            Email { value }
-            AccountId { value }
-            Title { value }
+            Name @optional { value }
+            Email @optional { value }
+            AccountId @optional { value }
+            Title @optional { value }
           }
         }
       }

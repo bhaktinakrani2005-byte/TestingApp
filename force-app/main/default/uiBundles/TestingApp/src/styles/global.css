@@ -16,6 +16,11 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 
+/* Main Hero section */
+.heroClass {
+  background-image: url('https://picsum.photos/id/1/200/300');
+}
+
 @custom-variant dark (&:is(.dark *));
 
 

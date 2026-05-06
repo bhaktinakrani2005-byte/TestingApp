@@ -1,14 +1,31 @@
 import GET_CONTACT_QUERY from "./query/getContact.graphql?raw";
-import { executeGraphQL } from "../../graphqlClient";
-import type { GetContactQuery, GetContactQueryVariables } from "../../../graphql-operations-types";
+import { fetchSingle } from "../graphqlClient";
 
-export type ContactDataResult = GetContactQuery["uiapi"]["query"]["Contact"]["edges"][0]["node"];
+/**
+ * Domain model for a Contact record.
+ */
+export interface Contact {
+    id: string;
+    name: string | null;
+    email: string | null;
+    accountId: string | null;
+    title: string | null;
+}
 
-export async function getContact(contactId: string): Promise<ContactDataResult | null> {
-    const data = await executeGraphQL<GetContactQuery, GetContactQueryVariables>(
+/**
+ * Service to fetch Contact data.
+ * Optimized using the shared fetchSingle helper for clean, flattened data.
+ * 
+ * @param contactId - The Salesforce Contact ID to fetch.
+ * @returns A Promise resolving to a flattened Contact object, or null if no record was found.
+ */
+export async function getContact(contactId: string): Promise<Contact | null> {
+    return fetchSingle<Contact, any, { contactId: string }>(
         GET_CONTACT_QUERY,
+        "Contact",
         { contactId }
     );
-    
-    return data?.uiapi?.query?.Contact?.edges?.[0]?.node || null;
 }
+
+// Alias for backward compatibility
+export type ContactDataResult = Contact;

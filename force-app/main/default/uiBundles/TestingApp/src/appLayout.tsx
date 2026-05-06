@@ -25,13 +25,12 @@ export default function AppLayout() {
 		}));
 
 	return (
-		<div className="min-h-screen flex flex-col bg-gray-50">
+		<div className="min-h-screen flex flex-col bg-gray-50 h-full">
 
 			{/* NAVBAR */}
-			<nav className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-gray-200">
-				<div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8">
+			<nav className="sticky top-0 h-full z-50 bg-white/80 backdrop-blur border-b border-gray-200">
+				<div className="mx-auto px-4 sm:px-6 lg:px-8">
 					<div className="flex justify-between items-center h-16">
-
 						{/* LOGO */}
 						<Link
 							to="/"
@@ -118,7 +117,7 @@ export default function AppLayout() {
 			</nav>
 
 			{/* CONTENT */}
-			<main className="flex-1">
+			<main className=" h-full ">
 				<Outlet />
 			</main>
 		</div>
