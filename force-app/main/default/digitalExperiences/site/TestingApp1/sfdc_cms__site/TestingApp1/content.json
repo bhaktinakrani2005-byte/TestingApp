@@ -1,0 +1,10 @@
+{
+  "type": "sfdc_cms__site",
+  "title": "TestingApp",
+  "contentBody": {
+    "authenticationType": "AUTHENTICATED_WITH_PUBLIC_ACCESS_ENABLED",
+    "appContainer": true,
+    "appSpace": "c__TestingApp"
+  },
+  "urlName": "testingapp"
+}
