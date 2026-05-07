@@ -16,5 +16,5 @@
         <members>TestingApp</members>
         <name>Network</name>
     </types>
-    <version>66.0</version>
+    <version>61.0</version>
 </Package>

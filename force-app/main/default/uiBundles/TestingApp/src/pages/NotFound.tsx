@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="flex-1 h-full flex items-center justify-center bg-gray-50 px-4">
       <div className="text-center max-w-md w-full">
 
         {/* Icon / Visual */}

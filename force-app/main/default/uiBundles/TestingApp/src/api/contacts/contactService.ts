@@ -1,31 +1,51 @@
-import GET_CONTACT_QUERY from "./query/getContact.graphql?raw";
-import { fetchSingle } from "../graphqlClient";
+import { executeGraphQL } from '../graphqlClient';
 
-/**
- * Domain model for a Contact record.
- */
-export interface Contact {
-    id: string;
-    name: string | null;
-    email: string | null;
-    accountId: string | null;
-    title: string | null;
+export interface ContactData {
+  id: string;
+  name: string;
+  email: string;
+  accountId: string;
+  title: string;
 }
 
-/**
- * Service to fetch Contact data.
- * Optimized using the shared fetchSingle helper for clean, flattened data.
- * 
- * @param contactId - The Salesforce Contact ID to fetch.
- * @returns A Promise resolving to a flattened Contact object, or null if no record was found.
- */
-export async function getContact(contactId: string): Promise<Contact | null> {
-    return fetchSingle<Contact, any, { contactId: string }>(
-        GET_CONTACT_QUERY,
-        "Contact",
-        { contactId }
-    );
-}
+export async function getContact(contactId: string): Promise<ContactData | null> {
+  try {
+    const query = `
+      query getContact($contactId: ID!) {
+        uiapi {
+          query {
+            Contact(where: { Id: { eq: $contactId } }) {
+              edges {
+                node {
+                  Id
+                  Name { value }
+                  Email { value }
+                  AccountId { value }
+                  Title { value }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
 
-// Alias for backward compatibility
-export type ContactDataResult = Contact;
+    const result = await executeGraphQL<any, { contactId: string }>(query, { contactId });
+    const edge = result?.uiapi?.query?.Contact?.edges?.[0];
+    console.log('edge result is',edge);
+
+    if (!edge) return null;
+
+    return {
+      id: edge.node.Id,
+      name: edge.node.Name?.value,
+      email: edge.node.Email?.value,
+      accountId: edge.node.AccountId?.value,
+      title: edge.node.Title?.value,
+    };
+
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
+}

@@ -5,11 +5,11 @@
   html,
   body,
   #root {
-    @apply min-h-screen;
+    @apply min-h-screen m-0 p-0;
   }
 
   body {
-    @apply antialiased bg-white;
+    @apply antialiased bg-white overflow-x-hidden;
   }
 }
 
@@ -19,6 +19,7 @@
 /* Main Hero section */
 .heroClass {
   background-image: url('https://picsum.photos/id/1/200/300');
+  min-height: calc(100vh - 4rem); /* Full viewport minus navbar height (h-16 = 64px = 4rem) */
 }
 
 @custom-variant dark (&:is(.dark *));
