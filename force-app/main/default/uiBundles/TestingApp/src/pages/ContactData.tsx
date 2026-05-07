@@ -50,6 +50,11 @@ export default function ContactData() {
                     <div className="bg-purple-100 p-6 rounded-lg shadow text-center font-bold">3</div>
                     <div className="bg-orange-100 p-6 rounded-lg shadow text-center font-bold">4</div>
                 </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-orange-100 p-6 rounded-lg shadow text-center font-bold">4</div>
+                    <div className="bg-purple-100 p-6 rounded-lg shadow text-center font-bold">3</div>
+                    <div className="bg-orange-100 p-6 rounded-lg shadow text-center font-bold">4</div>
+                </div>
             </div>
         </>
     );
