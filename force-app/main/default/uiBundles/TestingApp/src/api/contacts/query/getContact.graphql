@@ -11,6 +11,45 @@ query getContact ($contactId: ID!) {
             Email @optional { value }
             AccountId @optional { value }
             Title @optional { value }
+
+            Account @optional {
+              Name @optional {
+                value
+              }
+
+              Industry @optional {
+                value
+              }
+
+              Phone @optional {
+                value
+                displayValue
+              }
+            }
+
+            Cases @optional {
+              edges {
+                node {
+                  Id
+                  CaseNumber @optional {
+                    value
+                  }
+
+                  Subject @optional {
+                    value
+                  }
+
+                  Status @optional {
+                    value
+                  }
+
+                  Priority @optional {
+                    value
+                  }
+                }
+              }
+            }
+
           }
         }
       }

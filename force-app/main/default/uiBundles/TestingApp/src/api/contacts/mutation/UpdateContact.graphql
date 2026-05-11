@@ -1,0 +1,18 @@
+mutation UpdateContact($input: ContactUpdateInput!) {
+  uiapi(input: { allOrNone: true }) {
+    ContactUpdate(input: $input) {
+      Record {
+        Id
+        Name @optional {
+          value
+        }
+        Email @optional {
+          value
+        }
+        Title @optional {
+          value
+        }
+      }
+    }
+  }
+}

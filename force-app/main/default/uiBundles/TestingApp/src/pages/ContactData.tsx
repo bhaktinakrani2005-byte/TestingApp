@@ -1,66 +1,309 @@
 import { useEffect, useState } from 'react';
-import { getContact, type ContactData as ContactDataType } from '../api/contacts/contactService';
+import { useNavigate } from 'react-router-dom';
+import { getContact, updateContact, deleteContact, type ContactData as ContactDataType } from '../api/contacts/contactService';
+import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
+import { Edit, Save, X, ArrowLeft, Trash2 } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '../components/ui/dialog';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { toast } from 'sonner';
 
 export default function ContactData() {
+    const navigate = useNavigate();
     const [contact, setContact] = useState<ContactDataType | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [editValues, setEditValues] = useState({
+        firstName: '',
+        lastName: '',
+        email: '',
+        title: ''
+    });
+    const [isUpdating, setIsUpdating] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const fetchContact = (contactId: string) => {
+        setLoading(true);
+        getContact(contactId)
+            .then(data => {
+                setContact(data);
+                if (data) {
+                    setEditValues({
+                        firstName: data.firstName || '',
+                        lastName: data.lastName || '',
+                        email: data.email || '',
+                        title: data.title || ''
+                    });
+                }
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+    };
 
     useEffect(() => {
         const contactId =
             import.meta.env.VITE_CONTACT_ID ||
-            '003JW00001HQzVOYA1';
-
-        getContact(contactId)
-            .then(data => {
-                setContact(data);
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
+            '003QI00000hqb4MYAQ';
+        fetchContact(contactId);
     }, []);
 
-    if (loading) return <div>Loading...</div>;
+    const handleUpdate = async () => {
+        if (!contact) return;
+        setIsUpdating(true);
+        try {
+            const result = await updateContact(contact.id, editValues);
+            if (result) {
+                toast.success('Contact updated successfully!');
+                setIsEditDialogOpen(false);
+                setTimeout(() => {
+                    navigate('/');
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('Update failed:', error);
+            toast.error('Failed to update contact. Please try again.');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!contact) return;
+        setIsDeleting(true);
+        try {
+            const result = await deleteContact(contact.id);
+            if (result) {
+                toast.success('Contact deleted successfully!');
+                setIsDeleteDialogOpen(false);
+                setTimeout(() => {
+                    navigate('/');
+                }, 1500);
+            }
+        } catch (error) {
+            console.error('Delete failed:', error);
+            toast.error('Failed to delete contact. Please try again.');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    if (loading) return (
+        <div className="flex items-center justify-center h-full">
+            <div className="text-lg text-gray-500">Loading contact data...</div>
+        </div>
+    );
 
     return (
-        <>
-            <div className="mx-auto px-8 py-12 bg-cover bg-center border-b">
-                <h1 className="text-2xl font-bold mb-4">Contact Data</h1>
-                {contact ? (
-                    <div className="space-y-2">
-                        {/* <p><span className="font-semibold">Name:</span> {contact.name}</p>
-                        <p><span className="font-semibold">Email:</span> {contact.email}</p>
-                        <p><span className="font-semibold">Title:</span> {contact.title}</p>
-                        <p><span className="font-semibold">Account ID:</span> {contact.accountId}</p> */}
-                        <div className="flex flex-col gap-4">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="bg-blue-100 p-6 rounded-lg shadow text-center font-bold">{contact.name}</div>
-                                <div className="bg-green-100 p-6 rounded-lg shadow text-center font-bold">{contact.email}</div>
-                                <div className="bg-purple-100 p-6 rounded-lg shadow text-center font-bold">{contact.title}</div>
-                                <div className="bg-orange-100 p-6 rounded-lg shadow text-center font-bold">{contact.accountId}</div>
-                            </div>
-                       </div> 
-                    </div>
-                ) : (
-                    <p className="text-red-500">No contact found for ID: {import.meta.env.VITE_CONTACT_ID || '003Qy00000PeGVvIAN'}</p>
-                )}
-            </div>
-
-            {/* <div className="p-8">
-                <h2 className="text-xl font-bold mb-4">Grid Example</h2>
-                <div className="flex flex-col gap-4">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-blue-100 p-6 rounded-lg shadow text-center font-bold">{contact.name}</div>
-                        <div className="bg-green-100 p-6 rounded-lg shadow text-center font-bold">{contact.email}</div>
-                        <div className="bg-purple-100 p-6 rounded-lg shadow text-center font-bold">{contact.title}</div>
-                        <div className="bg-orange-100 p-6 rounded-lg shadow text-center font-bold">{contact.accountId}</div>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-blue-100 p-6 rounded-lg shadow text-center font-bold">1</div>
-                        <div className="bg-orange-100 p-6 rounded-lg shadow text-center font-bold">2</div>
-                        <div className="bg-purple-100 p-6 rounded-lg shadow text-center font-bold">3</div>
-                        <div className="bg-orange-100 p-6 rounded-lg shadow text-center font-bold">4</div>
-                    </div>
+        <div className="p-4 md:p-8 space-y-8">
+            <div className="flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
+                        <ArrowLeft className="size-5" />
+                    </Button>
+                    <h1 className="text-3xl font-bold">Contact Details</h1>
                 </div>
-            </div> */}
-        </>
+                <div className="flex items-center gap-2">
+                    {contact && (
+                        <>
+                            {/* Delete Button & Dialog */}
+                            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="destructive" size="sm" className="gap-2">
+                                        <Trash2 className="size-4" />
+                                        Delete
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Delete Contact</DialogTitle>
+                                        <DialogDescription>
+                                            Are you sure you want to delete this contact? This action cannot be undone.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                        <Button variant="ghost" onClick={() => setIsDeleteDialogOpen(false)} disabled={isDeleting}>
+                                            Cancel
+                                        </Button>
+                                        <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
+                                            {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+
+                            {/* Edit Button & Dialog */}
+                            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+                                <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm" className="gap-2">
+                                        <Edit className="size-4" />
+                                        Edit
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                        <DialogTitle>Edit Contact</DialogTitle>
+                                        <DialogDescription>
+                                            Update the contact's personal information.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="grid gap-4 py-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="firstName">First Name</Label>
+                                                <Input
+                                                    id="firstName"
+                                                    value={editValues.firstName}
+                                                    onChange={(e) => setEditValues({ ...editValues, firstName: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="grid gap-2">
+                                                <Label htmlFor="lastName">Last Name</Label>
+                                                <Input
+                                                    id="lastName"
+                                                    value={editValues.lastName}
+                                                    onChange={(e) => setEditValues({ ...editValues, lastName: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="email">Email</Label>
+                                            <Input
+                                                id="email"
+                                                type="email"
+                                                value={editValues.email}
+                                                onChange={(e) => setEditValues({ ...editValues, email: e.target.value })}
+                                            />
+                                        </div>
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="title">Title</Label>
+                                            <Input
+                                                id="title"
+                                                value={editValues.title}
+                                                onChange={(e) => setEditValues({ ...editValues, title: e.target.value })}
+                                            />
+                                        </div>
+                                    </div>
+                                    <DialogFooter>
+                                        <Button variant="ghost" onClick={() => setIsEditDialogOpen(false)} disabled={isUpdating}>
+                                            <X className="mr-2 size-4" />
+                                            Cancel
+                                        </Button>
+                                        <Button onClick={handleUpdate} disabled={isUpdating}>
+                                            <Save className="mr-2 size-4" />
+                                            {isUpdating ? 'Saving...' : 'Save Changes'}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                        </>
+                    )}
+                </div>
+            </div>
+            
+            {contact ? (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Contact Information */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Contact Information</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">Name</p>
+                                    <p className="text-lg font-semibold">{contact.name}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">Email</p>
+                                    <p className="text-lg">{contact.email}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">Title</p>
+                                    <p className="text-lg">{contact.title}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Account Information */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Account Information</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">Account Name</p>
+                                    <p className="text-lg font-semibold">{contact.accountName || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">Industry</p>
+                                    <p className="text-lg">{contact.accountIndustry || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium text-gray-500">Phone</p>
+                                    <p className="text-lg">{contact.accountPhone || 'N/A'}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Related Cases */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Related Cases</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {contact.cases && contact.cases.length > 0 ? (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Case Number</TableHead>
+                                            <TableHead>Subject</TableHead>
+                                            <TableHead>Status</TableHead>
+                                            <TableHead>Priority</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {contact.cases.map((c) => (
+                                            <TableRow key={c.id}>
+                                                <TableCell className="font-medium">{c.caseNumber}</TableCell>
+                                                <TableCell>{c.subject}</TableCell>
+                                                <TableCell>
+                                                    <Badge variant="outline">{c.status}</Badge>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Badge variant="secondary">{c.priority}</Badge>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            ) : (
+                                <div className="text-center py-8 text-gray-500">
+                                    No related cases found.
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </>
+            ) : (
+                <Card className="border-red-200 bg-red-50">
+                    <CardContent className="py-8 text-center text-red-600">
+                        No contact found for ID: {import.meta.env.VITE_CONTACT_ID || '003Qy00000PeGVvIAN'}
+                    </CardContent>
+                </Card>
+            )}
+        </div>
     );
 }

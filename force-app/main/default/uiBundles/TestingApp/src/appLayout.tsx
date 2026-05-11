@@ -4,6 +4,7 @@ import { useState } from "react";
 import { AuthMenu } from "./features/authentication/menu/AuthMenu";
 import { Button } from "./components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { Toaster } from "./components/ui/sonner";
 
 export default function AppLayout() {
 	const [isOpen, setIsOpen] = useState(false);
@@ -120,6 +121,7 @@ export default function AppLayout() {
 			<main className="flex-1">
 				<Outlet />
 			</main>
+			<Toaster />
 		</div>
 	);
 }
