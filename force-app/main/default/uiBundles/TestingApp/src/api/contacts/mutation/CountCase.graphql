@@ -1,0 +1,20 @@
+query DistinctCaseStatus {
+	uiapi {
+		aggregate {
+			Case(groupBy: { Status: { group: true } }) {
+				edges {
+					node {
+						aggregate @optional {
+							Status @optional {
+								value
+								displayValue
+								label
+							}
+                            count { value }
+						}
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,9 +1,15 @@
 import { useState , useEffect} from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import  { Avatar, AvatarImage, AvatarFallback } from '../components/ui/avatar';
+import { getDistinctCaseStatus  } from '../api/contacts/contactService';
 
 export default function ChartDataPage() {
     const [greeting, setGreeting] = useState('Good Afternoon');
+    type CaseStatusCount = {
+        status: string;
+        count: number;
+    };
+const [caseStatuses, setCaseStatuses] = useState<CaseStatusCount[]>([]);
 
     useEffect(() => {
         const now = new Date();
@@ -16,6 +22,13 @@ export default function ChartDataPage() {
         } else {
             setGreeting('Good Morning');
         }
+
+        async function fetchCaseCount() {
+        const count = await getDistinctCaseStatus();
+        setCaseStatuses(count);
+    }
+
+    fetchCaseCount();
     }, []);
 
     return (
@@ -65,7 +78,15 @@ export default function ChartDataPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-center text-gray-500">
-                                View your chart data2
+                                    <h1>Contact Cases</h1>
+
+                                {caseStatuses.map((item, index) => (
+                                    <div key={index}>
+                                        <p>
+                                        {item.status} = {item.count}
+                                        </p>
+                                    </div>
+                                ))}
                             </div>
                         </CardContent>
                      </Card>

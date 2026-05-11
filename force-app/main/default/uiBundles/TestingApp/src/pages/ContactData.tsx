@@ -20,14 +20,15 @@ import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 
 export default function ContactData() {
-    const navigate = useNavigate();
+    const navigate = useNavigate(); 
     const [contact, setContact] = useState<ContactDataType | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [editValues, setEditValues] = useState({
-        firstName: '',
-        lastName: '',
+        // firstName: '',
+        // lastName: '',
+        name: '',
         email: '',
         title: ''
     });
@@ -41,8 +42,9 @@ export default function ContactData() {
                 setContact(data);
                 if (data) {
                     setEditValues({
-                        firstName: data.firstName || '',
-                        lastName: data.lastName || '',
+                        // firstName: data.firstName || '',
+                        // lastName: data.lastName || '',
+                        name: data.name || '',
                         email: data.email || '',
                         title: data.title || ''
                     });
@@ -159,7 +161,16 @@ export default function ContactData() {
                                         </DialogDescription>
                                     </DialogHeader>
                                     <div className="grid gap-4 py-4">
-                                        <div className="grid grid-cols-2 gap-4">
+                                        <div className="grid gap-2">
+                                            <Label htmlFor="name">Name</Label>
+                                            <Input
+                                                id="name"
+                                                type="text"
+                                                value={editValues.name}
+                                                onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
+                                            />
+                                        </div>
+                                        {/* <div className="grid grid-cols-2 gap-4">
                                             <div className="grid gap-2">
                                                 <Label htmlFor="firstName">First Name</Label>
                                                 <Input
@@ -176,7 +187,7 @@ export default function ContactData() {
                                                     onChange={(e) => setEditValues({ ...editValues, lastName: e.target.value })}
                                                 />
                                             </div>
-                                        </div>
+                                        </div> */}
                                         <div className="grid gap-2">
                                             <Label htmlFor="email">Email</Label>
                                             <Input
