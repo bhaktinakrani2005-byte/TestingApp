@@ -1,6 +1,6 @@
-import React from 'react'
 import AddTodo from './AddTodo'
-import TodoList from './todoList'
+import TodoList from './TodoList'
+import UpdateTodo from './UpdateTodo'
 
 const TodoListMainPage = () => {
     return (
@@ -8,6 +8,7 @@ const TodoListMainPage = () => {
             <div className='w-full container' >
                 <AddTodo />
                 <TodoList />
+                <UpdateTodo />
             </div>
         </div>
 

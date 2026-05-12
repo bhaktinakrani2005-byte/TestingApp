@@ -36,7 +36,7 @@ const [caseStatuses, setCaseStatuses] = useState<CaseStatusCount[]>([]);
             <div>
                 <Card className="w-full bg-[url('https://picsum.photos/id/1/200/300')] bg-cover bg-center">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold text-white">Welcome John Doe</CardTitle>
+                    <CardTitle className="text-2xl font-bold textcwhite">Welcome John Doe</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="text-lg text-gray-700 text-white">
