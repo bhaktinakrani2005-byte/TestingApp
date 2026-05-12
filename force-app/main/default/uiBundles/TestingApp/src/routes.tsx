@@ -1,9 +1,10 @@
 import type { RouteObject } from 'react-router';
+import TodoListMainPage from './components/todo';
 import AuthAppLayout from "./features/authentication/layouts/AuthAppLayout";
+import ChartDataPage from './pages/ChartData';
+import ContactData from './pages/ContactData';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
-import ContactData from './pages/ContactData';
-import ChartDataPage from './pages/ChartData';
 
 export const routes: RouteObject[] = [
   {
@@ -15,17 +16,17 @@ export const routes: RouteObject[] = [
         element: <Home />,
         handle: { showInNavigation: true, label: "Home" }
       },
-       {
+      {
         path: 'contact',
         element: <ContactData />,
         handle: { showInNavigation: true, label: "Contact" }
       },
-       {
+      {
         path: 'todo',
-        element: <div>Todo</div>,
+        element: <TodoListMainPage />,
         handle: { showInNavigation: true, label: "Todo" }
       },
-       {
+      {
         path: 'chart',
         element: <ChartDataPage />,
         handle: { showInNavigation: true, label: "ChartData" }
