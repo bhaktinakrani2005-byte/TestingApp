@@ -1,4 +1,5 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { RootState } from "..";
 
 export interface Todo {
     id: number;
@@ -22,12 +23,22 @@ const initialState: TodoState = {
 /* Get all todos */
 export const fetchTodos = createAsyncThunk<
     Todo[],
-    void,
-    { rejectValue: string }
+    boolean | undefined,
+    {
+        rejectValue: string;
+        state: RootState;
+    }
 >(
     "todos/fetchTodos",
-    async (_, { rejectWithValue }) => {
+    async (isForce = false, { rejectWithValue, getState }) => {
         try {
+            const state = getState();
+
+            // if todos already available and not force call
+            if (!isForce && state.todo.todos.length > 0) {
+                return state.todo.todos;
+            }
+
             const response = await fetch(
                 "https://jsonplaceholder.typicode.com/todos"
             );

@@ -4,10 +4,13 @@ import { useState } from "react";
 import { AuthMenu } from "./features/authentication/menu/AuthMenu";
 import { Button } from "./components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRedux } from "./hook/useRedux";
+import { fetchTodos } from "./store/slice/TodoSlice";
 
 export default function AppLayout() {
 	const [isOpen, setIsOpen] = useState(false);
 	const location = useLocation();
+	const { dispatch } = useRedux();
 
 	const isActive = (path: string) => location.pathname === path;
 	const toggleMenu = () => setIsOpen(!isOpen);
@@ -23,6 +26,11 @@ export default function AppLayout() {
 			path: route.fullPath!,
 			label: route.handle?.label,
 		}));
+
+	const onChangeTab = (target: string) => {
+		if (target !== "/todo") return
+		dispatch(fetchTodos())
+	}
 
 	return (
 		<div className="min-h-screen flex flex-col bg-gray-50">
@@ -45,6 +53,7 @@ export default function AppLayout() {
 								<Link
 									key={item.path}
 									to={item.path}
+									onClick={() => onChangeTab(item.path)}
 									className={`px-3 py-2 text-sm font-medium rounded-md transition ${isActive(item.path)
 										? "bg-blue-50 text-blue-600"
 										: "text-gray-600 hover:bg-gray-100"

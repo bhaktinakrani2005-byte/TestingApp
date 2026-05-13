@@ -19,7 +19,8 @@
 /* Main Hero section */
 .heroClass {
   background-image: url('https://picsum.photos/id/1/200/300');
-  min-height: calc(100vh - 4rem); /* Full viewport minus navbar height (h-16 = 64px = 4rem) */
+  min-height: calc(100vh - 4.09rem);
+  /* Full viewport minus navbar height (h-16 = 64px = 4rem) */
 }
 
 @custom-variant dark (&:is(.dark *));

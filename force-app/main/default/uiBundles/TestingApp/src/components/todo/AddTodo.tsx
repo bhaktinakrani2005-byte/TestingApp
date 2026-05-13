@@ -1,4 +1,4 @@
-import { useRedux } from "@/hook/store";
+import { useRedux } from "@/hook/useRedux";
 import { addTodo, fetchTodos } from "@/store/slice/TodoSlice";
 import { useState } from "react";
 import { Button } from "../ui";
@@ -21,7 +21,7 @@ export default function AddTodo() {
 
 
     const getTodos = () => {
-        dispatch(fetchTodos());
+        dispatch(fetchTodos(true));
     };
 
     return (

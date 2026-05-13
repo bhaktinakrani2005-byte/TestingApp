@@ -1,14 +1,14 @@
-import React from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "../../store";
+import { useRedux } from "@/hook/useRedux";
 import { removeTodo } from "../../store/slice/TodoSlice";
+import LoadingTodos from "./LoadingTodos";
 
 export default function TodoList() {
-    const todos = useSelector((state: RootState) => state.todo.todos);
-    const dispatch = useDispatch();
+    const { dispatch, selector } = useRedux()
+    const { todos = [], loading } = selector(state => state?.todo);
+
 
     return (
-        <ul className="space-y-2">
+        loading ? <LoadingTodos /> : <ul className="space-y-2">
             {todos.map((todo) => (
                 <li
                     key={todo.id}
