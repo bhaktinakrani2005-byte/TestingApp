@@ -6,10 +6,10 @@ export default function TodoList() {
     const { dispatch, selector } = useRedux()
     const { todos = [], loading } = selector(state => state?.todo)
 
-
+    const reveredTodos = [...todos].reverse()
     return (
         loading ? <LoadingTodos /> : <ul className="space-y-2">
-            {todos.map((todo, i) => (
+            {reveredTodos?.map((todo, i) => (
                 <li
                     key={todo.id}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-md shadow-sm border border-gray-100"

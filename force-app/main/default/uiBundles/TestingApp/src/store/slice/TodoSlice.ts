@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "..";
+import { BASE_URL } from "@/lib/utils";
 
 export interface Todo {
     id: number;
@@ -40,7 +41,7 @@ export const fetchTodos = createAsyncThunk<
             }
 
             const response = await fetch(
-                "https://jsonplaceholder.typicode.com/todos"
+                `${BASE_URL}/todos`
             );
 
             if (!response.ok) {
@@ -50,6 +51,50 @@ export const fetchTodos = createAsyncThunk<
             const data: Todo[] = await response.json();
 
             return data;
+        } catch (error) {
+            return rejectWithValue(
+                error instanceof Error
+                    ? error.message
+                    : "Something went wrong"
+            );
+        }
+    }
+);
+
+
+export interface createBodyData {
+    "userId": string,
+    "title": string,
+    "completed": boolean
+}
+
+
+/* Create  todos */
+export const createTodos = createAsyncThunk<
+    Todo, // return type
+    createBodyData, // argument type
+    {
+        rejectValue: string;
+        state: RootState;
+    }
+>(
+    "todos/createTodos",
+    async (createBodyData, { rejectWithValue }) => {
+        try {
+            const response = await fetch(`${BASE_URL}/todos`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(createBodyData),
+            });
+            if (!response.ok) {
+                return rejectWithValue("Failed to fetch todos");
+            }
+
+            const data = await response.json();
+            return data
+
         } catch (error) {
             return rejectWithValue(
                 error instanceof Error
@@ -103,6 +148,17 @@ export const todoSlice = createSlice({
                 state.loading = false;
                 state.error =
                     action.payload || "Failed to fetch todos";
+            })
+            .addCase(createTodos.pending, (state) => {
+                state.loading = true;
+            })
+            .addCase(createTodos.fulfilled, (state, action) => {
+                state.loading = false;
+                state.todos.push(action.payload);
+            })
+            .addCase(createTodos.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload as string;
             });
     },
 });

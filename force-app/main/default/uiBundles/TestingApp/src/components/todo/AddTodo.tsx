@@ -1,18 +1,18 @@
 import { useRedux } from "@/hook/useRedux";
 import {
-    addTodo,
+    createBodyData,
+    createTodos,
     fetchTodos,
     updateTodo
 } from "@/store/slice/TodoSlice";
 
+import { RefreshCcw } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui";
-import { RefreshCcw } from "lucide-react";
 
 export default function AddTodo() {
 
-    const { dispatch, selector } = useRedux();
-    const { todos = [] } = selector(state => state.todo)
+    const { dispatch } = useRedux();
     const [title, setTitle] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
 
@@ -34,19 +34,27 @@ export default function AddTodo() {
             setEditId(null);
 
         } else {
-
+            const bodyData: createBodyData = {
+                userId: Date.now().toString(),
+                title: title.trim(),
+                completed: false
+            };
+            dispatch(
+                createTodos(bodyData)
+            );
             // ADD
-            dispatch(addTodo({
+            /* dispatch(addTodo({
                 id: Date.now(),
                 title: title.trim(),
                 completed: false,
                 userId: 0
-            }));
+            })); */
         }
 
         setTitle('');
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const handleEdit = (todo: any) => {
         setTitle(todo.title);
         setEditId(todo.id);
@@ -57,7 +65,7 @@ export default function AddTodo() {
     };
     //  style={{position: 'sticky', top: 65, background: 'white', paddingTop: '10px'}}
     return (
-        <div className="sticky top-[90px] bg-white">
+        <div className="sticky top-22.5 bg-white">
             <form onSubmit={handleSubmit} className="flex gap-2 mb-4 items-center p-2">
                 <input
                     type="text"
