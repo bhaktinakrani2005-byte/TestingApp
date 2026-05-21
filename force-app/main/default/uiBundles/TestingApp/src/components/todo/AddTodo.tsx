@@ -1,49 +1,110 @@
 import { useRedux } from "@/hook/useRedux";
-import { addTodo, fetchTodos } from "@/store/slice/TodoSlice";
+import {
+    addTodo,
+    fetchTodos,
+    updateTodo
+} from "@/store/slice/TodoSlice";
+
 import { useState } from "react";
 import { Button } from "../ui";
+import { RefreshCcw } from "lucide-react";
 
 export default function AddTodo() {
-    const { dispatch } = useRedux()
-    const [title, setTitle] = useState('');
 
-    const handleAddTodo = () => {
-        if (title.trim()) {
+    const { dispatch, todos } = useRedux();
+
+    const [title, setTitle] = useState('');
+    const [editId, setEditId] = useState<number | null>(null);
+
+    const handleSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+
+        if (!title.trim()) return;
+
+        // UPDATE
+        if (editId !== null) {
+
+            dispatch(updateTodo({
+                id: editId,
+                title: title.trim(),
+                completed: false,
+                userId: 0
+            }));
+
+            setEditId(null);
+
+        } else {
+
+            // ADD
             dispatch(addTodo({
                 id: Date.now(),
                 title: title.trim(),
                 completed: false,
                 userId: 0
             }));
-            setTitle('');
         }
+
+        setTitle('');
     };
 
+    const handleEdit = (todo: any) => {
+        setTitle(todo.title);
+        setEditId(todo.id);
+    };
 
     const getTodos = () => {
         dispatch(fetchTodos(true));
     };
 
     return (
-        <div className="flex gap-2 mb-4">
-            <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Add a new todo..."
-            />
-            <button
-                onClick={handleAddTodo}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-            >
-                Add Todo
-            </button>
+        <div style={{position: 'sticky', top: 65, background: 'white', paddingTop: '10px'}}>
 
-            <Button onClick={getTodos}>Get Todos</Button>
+            <form onSubmit={handleSubmit} className="flex gap-2 mb-4 items-center p-2">
+
+                <input
+                    type="text"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    className="flex-1 px-3 py-2 border rounded-md"
+                    placeholder="Add todo..."
+                />
+
+                <Button
+                    type="submit"
+                    className="bg-blue-500 hover:bg-blue-600"
+                >
+                    {editId !== null ? 'Update Todo' : 'Add Todo'}
+                </Button>
+
+                <Button type="button" onClick={getTodos} variant="outline" size="icon">
+                    <RefreshCcw className="size-4" />
+                </Button>
+
+            </form>
+
+            {/* Todo List */}
+            <div className="space-y-2">
+
+                {todos?.map((todo: any) => (
+
+                    <div
+                        key={todo.id}
+                        className="flex items-center justify-between border p-2 rounded-md"
+                    >
+                        <span>{todo.title}</span>
+
+                        <button
+                            onClick={() => handleEdit(todo)}
+                            className="px-3 py-1 bg-green-500 text-white rounded"
+                        >
+                            Edit
+                        </button>
+                    </div>
+
+                ))}
+
+            </div>
+
         </div>
-    )
+    );
 }
-
-
-

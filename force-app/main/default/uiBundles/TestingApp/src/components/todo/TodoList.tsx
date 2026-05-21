@@ -1,5 +1,5 @@
 import { useRedux } from "@/hook/useRedux";
-import { removeTodo } from "../../store/slice/TodoSlice";
+import { removeTodo, updateTodo } from "../../store/slice/TodoSlice";
 import LoadingTodos from "./LoadingTodos";
 
 export default function TodoList() {
@@ -14,7 +14,14 @@ export default function TodoList() {
                     key={todo.id}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-md shadow-sm border border-gray-100"
                 >
+                    <span className="text-red font-bold text-sm">{todo.id}</span>
                     <span className="text-gray-800">{todo.title}</span>
+                    {/* <button
+                        onClick={() => dispatch(updateTodo(todo))}
+                        className="text-red-500 hover:text-red-700 font-medium text-sm transition-colors"
+                    >
+                        Update
+                    </button> */}
                     <button
                         onClick={() => dispatch(removeTodo(todo.id))}
                         className="text-red-500 hover:text-red-700 font-medium text-sm transition-colors"
