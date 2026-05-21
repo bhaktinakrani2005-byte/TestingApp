@@ -5,10 +5,9 @@ import UpdateTodo from './UpdateTodo'
 const TodoListMainPage = () => {
     return (
         <div className=' flex p-4 justify-center h-full flex-col items-center'>
-            <div className='w-full container' >
+            <div className='w-full container space-y-8' >
                 <AddTodo />
                 <TodoList />
-                <UpdateTodo />
             </div>
         </div>
 

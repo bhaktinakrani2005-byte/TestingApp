@@ -63,6 +63,11 @@ export default function AddTodo() {
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && e.shiftKey) {
+                            e.preventDefault();
+                        }
+                    }}
                     className="flex-1 px-3 py-2 border rounded-md"
                     placeholder="Add todo..."
                 />
@@ -81,7 +86,7 @@ export default function AddTodo() {
             </form>
 
             {/* Todo List */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
 
                 {todos?.map((todo: any) => (
 
@@ -101,7 +106,7 @@ export default function AddTodo() {
 
                 ))}
 
-            </div>
+            </div> */}
 
         </div>
     );
