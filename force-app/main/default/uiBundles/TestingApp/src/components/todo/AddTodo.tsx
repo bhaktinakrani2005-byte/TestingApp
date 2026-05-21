@@ -11,7 +11,8 @@ import { RefreshCcw } from "lucide-react";
 
 export default function AddTodo() {
 
-    const { dispatch, todos } = useRedux();
+    const { dispatch, selector } = useRedux();
+   // const { todos = [] } = selector(state => state.todo);
 
     const [title, setTitle] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
@@ -57,14 +58,19 @@ export default function AddTodo() {
     };
 
     return (
-        <div style={{position: 'sticky', top: 65, background: 'white', paddingTop: '10px'}}>
+        <div className="sticky top-[90px] bg-white p-3">
 
-            <form onSubmit={handleSubmit} className="flex gap-2 mb-4 items-center p-2">
+            <form onSubmit={handleSubmit} className="flex gap-2 items-center p-2">
 
                 <input
                     type="text"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && e.shiftKey) {
+                            e.preventDefault();
+                        }
+                    }}
                     className="flex-1 px-3 py-2 border rounded-md"
                     placeholder="Add todo..."
                 />
@@ -83,7 +89,7 @@ export default function AddTodo() {
             </form>
 
             {/* Todo List */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
 
                 {todos?.map((todo: any) => (
 
@@ -103,7 +109,7 @@ export default function AddTodo() {
 
                 ))}
 
-            </div>
+            </div> */}
 
         </div>
     );

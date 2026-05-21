@@ -1,20 +1,24 @@
 import { useRedux } from "@/hook/useRedux";
-import { removeTodo, updateTodo } from "../../store/slice/TodoSlice";
+import { useEffect} from "react";
+import { removeTodo, updateTodo, fetchTodos } from "../../store/slice/TodoSlice";
 import LoadingTodos from "./LoadingTodos";
 
 export default function TodoList() {
     const { dispatch, selector } = useRedux()
-    const { todos = [], loading } = selector(state => state?.todo);
+    const { todos = [], loading } = selector(state => state?.todo)
+    useEffect(() => {
+        dispatch(fetchTodos(false));
+    }, [])
 
 
     return (
         loading ? <LoadingTodos /> : <ul className="space-y-2">
-            {todos.map((todo) => (
+            {todos.map((todo,i) => (
                 <li
                     key={todo.id}
                     className="flex items-center justify-between p-3 bg-gray-50 rounded-md shadow-sm border border-gray-100"
                 >
-                    <span className="text-red font-bold text-sm">{todo.id}</span>
+                    <p className="text-red font-bold text-sm">{i + 1}</p>
                     <span className="text-gray-800">{todo.title}</span>
                     {/* <button
                         onClick={() => dispatch(updateTodo(todo))}
