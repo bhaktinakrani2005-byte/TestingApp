@@ -11,8 +11,8 @@ import { RefreshCcw } from "lucide-react";
 
 export default function AddTodo() {
 
-    const { dispatch, todos } = useRedux();
-
+    const { dispatch, selector } = useRedux();
+    const { todos = [] } = selector(state => state.todo)
     const [title, setTitle] = useState('');
     const [editId, setEditId] = useState<number | null>(null);
 
@@ -55,12 +55,10 @@ export default function AddTodo() {
     const getTodos = () => {
         dispatch(fetchTodos(true));
     };
-
+    //  style={{position: 'sticky', top: 65, background: 'white', paddingTop: '10px'}}
     return (
-        <div style={{position: 'sticky', top: 65, background: 'white', paddingTop: '10px'}}>
-
+        <div className="sticky top-[90px] bg-white">
             <form onSubmit={handleSubmit} className="flex gap-2 mb-4 items-center p-2">
-
                 <input
                     type="text"
                     value={title}
