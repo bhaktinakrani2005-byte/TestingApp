@@ -20,7 +20,7 @@ import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 
 export default function ContactData() {
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
     const [contact, setContact] = useState<ContactDataType | null>(null);
     const [loading, setLoading] = useState(true);
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -55,11 +55,11 @@ export default function ContactData() {
     };
 
     useEffect(() => {
-        const contactId =
-            import.meta.env.VITE_CONTACT_ID ||
-            '003QI00000hqb4MYAQ';
+        const contactId = process.env.VITE_CONTACT_ID || '';
+        console.log('contact id is ', contactId);
         fetchContact(contactId);
     }, []);
+
 
     const handleUpdate = async () => {
         if (!contact) return;
@@ -222,7 +222,7 @@ export default function ContactData() {
                     )}
                 </div>
             </div>
-            
+
             {contact ? (
                 <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -311,7 +311,7 @@ export default function ContactData() {
             ) : (
                 <Card className="border-red-200 bg-red-50">
                     <CardContent className="py-8 text-center text-red-600">
-                        No contact found for ID: {import.meta.env.VITE_CONTACT_ID || '003Qy00000PeGVvIAN'}
+                        No contact found for ID: {process.env.VITE_CONTACT_ID || '003Qy00000PeGVvIAN'}
                     </CardContent>
                 </Card>
             )}

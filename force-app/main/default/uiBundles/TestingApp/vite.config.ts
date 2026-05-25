@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { resolve } from 'path';
@@ -11,7 +11,18 @@ const schemaPath = resolve(__dirname, '../../../../../schema.graphql');
 const schemaExists = existsSync(schemaPath);
 
 export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, __dirname, '');
+  
+  const envDefinitions = Object.keys(env).reduce((acc, key) => {
+    acc[`process.env.${key}`] = JSON.stringify(env[key]);
+    return acc;
+  }, {} as Record<string, string>);
+
   return {
+    define: {
+      ...envDefinitions,
+      'process.env': JSON.stringify(env)
+    },
     base: './',
     plugins: [
       tailwindcss(),

@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "..";
-import { BASE_URL } from "@/lib/utils";
+
 
 export interface Todo {
     id: number;
@@ -41,7 +41,7 @@ export const fetchTodos = createAsyncThunk<
             }
 
             const response = await fetch(
-                `${BASE_URL}/todos`
+                `${process.env.BASE_URL}/todos`
             );
 
             if (!response.ok) {
@@ -81,7 +81,7 @@ export const createTodos = createAsyncThunk<
     "todos/createTodos",
     async (createBodyData, { rejectWithValue }) => {
         try {
-            const response = await fetch(`${BASE_URL}/todos`, {
+            const response = await fetch(`${process.env.BASE_URL}/todos`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
