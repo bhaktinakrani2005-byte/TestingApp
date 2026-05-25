@@ -1,10 +1,24 @@
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { fetchContact } from '../store/slice/ContactSlice';
+import { useRedux } from '@/hook/useRedux';
+
 
 
 export default function HomePage() {
 	const navigate = useNavigate();
+	const { dispatch } = useRedux();
+	const ContactId = process.env.VITE_CONTACT_ID;
 	const handleClick = () => {
-		navigate('/contact');
+		//navigate('/contact');
+		dispatch(fetchContact(`${ContactId}`))
+			.unwrap()
+			.then(() => {
+				navigate('/Contact');
+			})
+			.catch((error) => {
+				navigate("/");
+				console.error('Failed to fetch contact:', error);
+			})
 	};
 
 

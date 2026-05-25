@@ -18,17 +18,19 @@ import storage from "redux-persist/lib/storage";
 
 // Slices
 import todoReducer from "./slice/TodoSlice";
+import contactReducer from "./slice/ContactSlice";
 
 // Root reducer
 const rootReducer = combineReducers({
     todo: todoReducer,
+    contact: contactReducer,
 });
 
 // Persist config
 const persistConfig = {
     key: "root",
     storage,
-    whitelist: ["todo"], // Only todo slice will persist
+    whitelist: ["todo", "contact"], // Only todo slice will persist
 };
 
 const persistedReducer = persistReducer(

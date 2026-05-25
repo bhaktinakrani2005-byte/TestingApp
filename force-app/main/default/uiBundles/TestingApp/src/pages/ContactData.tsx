@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getContact, updateContact, deleteContact, type ContactData as ContactDataType } from '../api/contacts/contactService';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
@@ -18,16 +17,17 @@ import {
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
+import { useAppDispatch, useAppSelector } from '../store';
+import {updateContactThunk, deleteContactThunk } from '../store/slice/ContactSlice';
 
 export default function ContactData() {
     const navigate = useNavigate();
-    const [contact, setContact] = useState<ContactDataType | null>(null);
-    const [loading, setLoading] = useState(true);
+    const dispatch = useAppDispatch();
+    const { contact, loading } = useAppSelector((state) => state.contact);
+
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [editValues, setEditValues] = useState({
-        // firstName: '',
-        // lastName: '',
         name: '',
         email: '',
         title: ''
@@ -35,47 +35,30 @@ export default function ContactData() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const fetchContact = (contactId: string) => {
-        setLoading(true);
-        getContact(contactId)
-            .then(data => {
-                setContact(data);
-                if (data) {
-                    setEditValues({
-                        // firstName: data.firstName || '',
-                        // lastName: data.lastName || '',
-                        name: data.name || '',
-                        email: data.email || '',
-                        title: data.title || ''
-                    });
-                }
-                setLoading(false);
-            })
-            .catch(() => setLoading(false));
-    };
-
+   
     useEffect(() => {
-        const contactId = process.env.VITE_CONTACT_ID || '';
-        console.log('contact id is ', contactId);
-        fetchContact(contactId);
-    }, []);
-
+        if (contact) {
+            setEditValues({
+                name: contact.name || '',
+                email: contact.email || '',
+                title: contact.title || ''
+            });
+        }
+    }, [contact]);
 
     const handleUpdate = async () => {
         if (!contact) return;
         setIsUpdating(true);
         try {
-            const result = await updateContact(contact.id, editValues);
-            if (result) {
-                toast.success('Contact updated successfully!');
-                setIsEditDialogOpen(false);
-                setTimeout(() => {
-                    navigate('/');
-                }, 1500);
-            }
+            await dispatch(updateContactThunk({ contactId: contact.id, values: editValues })).unwrap();
+            toast.success('Contact updated successfully!');
+            setIsEditDialogOpen(false);
+            setTimeout(() => {
+                navigate('/');
+            }, 1500);
         } catch (error) {
             console.error('Update failed:', error);
-            toast.error('Failed to update contact. Please try again.');
+            toast.error(typeof error === 'string' ? error : 'Failed to update contact. Please try again.');
         } finally {
             setIsUpdating(false);
         }
@@ -85,17 +68,15 @@ export default function ContactData() {
         if (!contact) return;
         setIsDeleting(true);
         try {
-            const result = await deleteContact(contact.id);
-            if (result) {
-                toast.success('Contact deleted successfully!');
-                setIsDeleteDialogOpen(false);
-                setTimeout(() => {
-                    navigate('/');
-                }, 1500);
-            }
+            await dispatch(deleteContactThunk(contact.id)).unwrap();
+            toast.success('Contact deleted successfully!');
+            setIsDeleteDialogOpen(false);
+            setTimeout(() => {
+                navigate('/');
+            }, 1500);
         } catch (error) {
             console.error('Delete failed:', error);
-            toast.error('Failed to delete contact. Please try again.');
+            toast.error(typeof error === 'string' ? error : 'Failed to delete contact. Please try again.');
         } finally {
             setIsDeleting(false);
         }
@@ -170,24 +151,6 @@ export default function ContactData() {
                                                 onChange={(e) => setEditValues({ ...editValues, name: e.target.value })}
                                             />
                                         </div>
-                                        {/* <div className="grid grid-cols-2 gap-4">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="firstName">First Name</Label>
-                                                <Input
-                                                    id="firstName"
-                                                    value={editValues.firstName}
-                                                    onChange={(e) => setEditValues({ ...editValues, firstName: e.target.value })}
-                                                />
-                                            </div>
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="lastName">Last Name</Label>
-                                                <Input
-                                                    id="lastName"
-                                                    value={editValues.lastName}
-                                                    onChange={(e) => setEditValues({ ...editValues, lastName: e.target.value })}
-                                                />
-                                            </div>
-                                        </div> */}
                                         <div className="grid gap-2">
                                             <Label htmlFor="email">Email</Label>
                                             <Input

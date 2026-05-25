@@ -142,9 +142,18 @@ export async function updateContact(
       }
     `;
 
-    // Map fields from the flat input to the structure expected by Salesforce ContactUpdateInput
+    // Map fields from the flat input to the structure expected by Salesforce ContactUpdateInput.
+    // Since Name is a read-only compound field in Salesforce, we must update FirstName and LastName instead.
     const contactFields: Record<string, any> = {};
-    if (values.name) contactFields.Name = values.name;
+    if (values.name) {
+      const parts = values.name.trim().split(/\s+/);
+      if (parts.length > 1) {
+        contactFields.FirstName = parts[0];
+        contactFields.LastName = parts.slice(1).join(' ');
+      } else {
+        contactFields.LastName = parts[0];
+      }
+    }
     if (values.email) contactFields.Email = values.email;
     if (values.accountId) contactFields.AccountId = values.accountId;
     if (values.title) contactFields.Title = values.title;
@@ -183,9 +192,7 @@ export async function deleteContact(contactId: string) {
       mutation DeleteContact($input: ContactDeleteInput!) {
         uiapi(input: { allOrNone: true }) {
           ContactDelete(input: $input) {
-            Record {
-              Id
-            }
+            deletedRecordId
           }
         }
       }
@@ -197,11 +204,11 @@ export async function deleteContact(contactId: string) {
       }
     });
 
-    const record = result?.uiapi?.ContactDelete?.Record;
-    if (!record) return null;
+    const deletedRecordId = result?.uiapi?.ContactDelete?.deletedRecordId;
+    if (!deletedRecordId) return null;
 
     return {
-      id: record.Id
+      id: deletedRecordId
     };
   } catch (error) {
     console.error('Error deleting contact:', error);

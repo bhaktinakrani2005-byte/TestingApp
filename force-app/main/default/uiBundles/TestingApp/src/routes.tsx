@@ -19,17 +19,17 @@ export const routes: RouteObject[] = [
       {
         path: 'contact',
         element: <ContactData />,
-        handle: { showInNavigation: true, label: "Contact" }
+        handle: { showInNavigation: false, label: "Contact" }
       },
       {
         path: 'todo',
         element: <TodoListMainPage />,
-        handle: { showInNavigation: true, label: "Todo" }
+        handle: { showInNavigation: false, label: "Todo" }
       },
       {
         path: 'chart',
         element: <ChartDataPage />,
-        handle: { showInNavigation: true, label: "ChartData" }
+        handle: { showInNavigation: false, label: "ChartData" }
       },
       {
         path: '*',
