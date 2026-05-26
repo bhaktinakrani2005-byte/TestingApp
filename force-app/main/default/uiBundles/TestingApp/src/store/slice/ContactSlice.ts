@@ -4,7 +4,8 @@ import {
     getDistinctCaseStatus,
     updateContact,
     deleteContact,
-    ContactData
+    ContactData,
+    getAllContacts
 } from "@/api/contacts/contactService";
 import { RootState } from "..";
 
@@ -33,8 +34,16 @@ export interface CaseStatusCount {
     count: number;
 }
 
+export interface ContactListItem {
+    email: string;
+    id: string;
+    name: string;
+    title: string;
+}
+
 interface ContactState {
     contact: ContactDetails | null;
+    contactList: ContactListItem[];
     caseStatuses: CaseStatusCount[];
     loading: boolean;
     error: string | null;
@@ -43,6 +52,7 @@ interface ContactState {
 
 const initialState: ContactState = {
     contact: null,
+    contactList: [],
     caseStatuses: [],
     loading: false,
     error: null,
@@ -88,6 +98,30 @@ export const fetchUser = createAsyncThunk<
         }
     }
 )
+
+export const fetchContactList = createAsyncThunk<
+    ContactListItem[],
+    void,
+    {
+        rejectValue: string;
+        state: RootState;
+    }>(
+        'contact/fetchContactList',
+        async (_, { rejectWithValue }) => {
+            try {
+                const data = await getAllContacts();
+
+                if (!data) {
+                    return rejectWithValue("User not found");
+                }
+                return data;
+            }
+            catch (error) {
+                console.log(error);
+                return rejectWithValue("Failed to fetch user");
+            }
+        });
+
 
 export const fetchContact = createAsyncThunk<
     ContactDetails,
@@ -293,6 +327,20 @@ export const ContactSlice = createSlice({
             .addCase(fetchUser.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to get user";
+            })
+            .addCase(fetchContactList.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchContactList.fulfilled, (state, action) => {
+                state.loading = false;
+                console.log(action.payload, "action.payload");
+
+                state.contactList = action.payload;
+            })
+            .addCase(fetchContactList.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to get contact list";
             });
     }
 });

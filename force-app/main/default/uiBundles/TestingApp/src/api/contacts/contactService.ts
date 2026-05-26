@@ -80,6 +80,67 @@ export async function getContact(contactId: string): Promise<ContactData | null>
   }
 }
 
+
+export async function getAllContacts() {
+  try {
+    const query = `
+        query GetContacts {
+          uiapi {
+            query {
+              Contact(first: 50) {
+                edges {
+                  node {
+                    Id
+                    
+                    Name {
+                      value
+                    }
+
+                    Email {
+                      value
+                    }
+
+                    Title {
+                      value
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `;
+
+    const result: any = await executeGraphQL(query);
+
+    console.log(result?.uiapi?.query?.Contact?.edges, "GRAPHQL RESULT ",);
+    result?.uiapi?.query?.Contact?.edges?.map((edge: any) => ({
+      id: edge.node.Id,
+      name: edge.node.Name?.value,
+      email: edge.node.Email?.value,
+      title: edge.node.Title?.value,
+    }))
+
+    const data = result?.uiapi?.query?.Contact?.edges?.map((edge: any) => {
+      return ({
+        id: edge.node.Id,
+        name: edge.node.Name?.value,
+        email: edge.node.Email?.value,
+        title: edge.node.Title?.value,
+      })
+
+    })
+
+    return data || [];
+
+  } catch (error) {
+
+    console.error("GRAPHQL ERROR", error);
+
+    return [];
+  }
+}
+
 export async function getDistinctCaseStatus() {
   try {
     const query = `
@@ -103,7 +164,7 @@ export async function getDistinctCaseStatus() {
           }
         }
       }
-    `; 
+    `;
 
     const result = await executeGraphQL(query);
 
