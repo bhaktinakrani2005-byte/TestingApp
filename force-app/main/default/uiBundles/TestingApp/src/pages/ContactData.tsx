@@ -18,7 +18,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
 import { useAppDispatch, useAppSelector } from '../store';
-import {updateContactThunk, deleteContactThunk } from '../store/slice/ContactSlice';
+import { updateContactThunk, deleteContactThunk } from '../store/slice/ContactSlice';
 
 export default function ContactData() {
     const navigate = useNavigate();
@@ -35,7 +35,7 @@ export default function ContactData() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
 
-   
+
     useEffect(() => {
         if (contact) {
             setEditValues({
@@ -54,7 +54,7 @@ export default function ContactData() {
             toast.success('Contact updated successfully!');
             setIsEditDialogOpen(false);
             setTimeout(() => {
-                navigate('/');
+                navigate('/contact');
             }, 1500);
         } catch (error) {
             console.error('Update failed:', error);

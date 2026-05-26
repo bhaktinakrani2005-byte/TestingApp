@@ -21,8 +21,8 @@ export default function ChartDataPage() {
             setGreeting('Good Morning');
         }
 
-        dispatch(fetchDistinctCaseStatuses());
-    }, [dispatch]);
+        //dispatch(fetchDistinctCaseStatuses());
+    }, []);
 
     return (
         <div className="w-full p-4 md:p-8">
@@ -76,7 +76,7 @@ export default function ChartDataPage() {
                                 {caseStatuses.map((item, index) => (
                                     <div key={index}>
                                         <p>
-                                        {item.status} = {item.count}
+                                            {item.status} = {item.count}
                                         </p>
                                     </div>
                                 ))}

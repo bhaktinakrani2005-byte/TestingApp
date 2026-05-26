@@ -21,7 +21,7 @@ const USER_CONTACT_FIELDS = `
     ContactId @optional { value }`;
 
 function getUserProfileQuery(fields: string): string {
-	return `
+    return `
     query GetUserProfile($userId: ID) {
         uiapi {
             query {
@@ -36,7 +36,7 @@ function getUserProfileQuery(fields: string): string {
 }
 
 function getUserProfileMutation(fields: string): string {
-	return `
+    return `
     mutation UpdateUserProfile($input: UserUpdateInput!) {
       uiapi {
         UserUpdate(input: $input) {
@@ -47,9 +47,9 @@ function getUserProfileMutation(fields: string): string {
 }
 
 function throwOnGraphQLErrors(response: any): void {
-	if (response?.errors?.length) {
-		throw new Error(response.errors.map((e: any) => e.message).join("; "));
-	}
+    if (response?.errors?.length) {
+        throw new Error(response.errors.map((e: any) => e.message).join("; "));
+    }
 }
 
 /**
@@ -58,15 +58,15 @@ function throwOnGraphQLErrors(response: any): void {
  * @param fields - GraphQL field selection (defaults to USER_PROFILE_FIELDS_FULL).
  */
 export async function fetchUserProfile<T>(
-	userId: string,
-	fields: string = USER_PROFILE_FIELDS_FULL,
+    userId: string,
+    fields: string = USER_PROFILE_FIELDS_FULL,
 ): Promise<T> {
-	const data = await createDataSDK();
-	const response: any = await data.graphql?.(getUserProfileQuery(fields), {
-		userId,
-	});
-	throwOnGraphQLErrors(response);
-	return flattenGraphQLRecord<T>(response?.data?.uiapi?.query?.User?.edges?.[0]?.node);
+    const data = await createDataSDK();
+    const response: any = await data.graphql?.(getUserProfileQuery(fields), {
+        userId,
+    });
+    throwOnGraphQLErrors(response);
+    return flattenGraphQLRecord<T>(response?.data?.uiapi?.query?.User?.edges?.[0]?.node);
 }
 
 /**
@@ -74,7 +74,7 @@ export async function fetchUserProfile<T>(
  * @param userId - The Salesforce User Id.
  */
 export async function fetchUserContact<T>(userId: string): Promise<T> {
-	return fetchUserProfile<T>(userId, USER_CONTACT_FIELDS);
+    return fetchUserProfile<T>(userId, USER_CONTACT_FIELDS);
 }
 
 /**
@@ -83,13 +83,13 @@ export async function fetchUserContact<T>(userId: string): Promise<T> {
  * @param values - The field values to update.
  */
 export async function updateUserProfile<T>(
-	userId: string,
-	values: Record<string, unknown>,
+    userId: string,
+    values: Record<string, unknown>,
 ): Promise<T> {
-	const data = await createDataSDK();
-	const response: any = await data.graphql?.(getUserProfileMutation(USER_PROFILE_FIELDS_FULL), {
-		input: { Id: userId, User: { ...values } },
-	});
-	throwOnGraphQLErrors(response);
-	return flattenGraphQLRecord<T>(response?.data?.uiapi?.UserUpdate?.Record);
+    const data = await createDataSDK();
+    const response: any = await data.graphql?.(getUserProfileMutation(USER_PROFILE_FIELDS_FULL), {
+        input: { Id: userId, User: { ...values } },
+    });
+    throwOnGraphQLErrors(response);
+    return flattenGraphQLRecord<T>(response?.data?.uiapi?.UserUpdate?.Record);
 }

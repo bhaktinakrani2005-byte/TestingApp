@@ -1,12 +1,12 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { RootState } from "..";
-import { 
-    getContact, 
-    getDistinctCaseStatus, 
-    updateContact, 
-    deleteContact, 
-    ContactData 
+import {
+    getContact,
+    getDistinctCaseStatus,
+    updateContact,
+    deleteContact,
+    ContactData
 } from "@/api/contacts/contactService";
+import { RootState } from "..";
 
 export interface Case {
     id: string;
@@ -38,6 +38,7 @@ interface ContactState {
     caseStatuses: CaseStatusCount[];
     loading: boolean;
     error: string | null;
+    currentUser: CurrentUser | null;
 }
 
 const initialState: ContactState = {
@@ -45,7 +46,48 @@ const initialState: ContactState = {
     caseStatuses: [],
     loading: false,
     error: null,
+    currentUser: null,
 };
+
+export interface CurrentUser {
+    id: string;
+    name: string;
+    email: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+}
+
+export async function getCurrentUser(): Promise<CurrentUser> {
+    const response = await fetch('/services/data/v66.0/chatter/users/me');
+    if (!response.ok) {
+        throw new Error('Failed to fetch user');
+    }
+    return response.json();
+}
+
+export const fetchUser = createAsyncThunk<
+    CurrentUser,
+    void,
+    {
+        rejectValue: string;
+    }
+>(
+    'contact/fetchUser',
+    async (_, { rejectWithValue }) => {
+        try {
+            const data = await getCurrentUser();
+            if (!data) {
+                return rejectWithValue("User not found");
+            }
+            return data;
+        }
+        catch (error) {
+            console.log(error);
+            return rejectWithValue("Failed to fetch user");
+        }
+    }
+)
 
 export const fetchContact = createAsyncThunk<
     ContactDetails,
@@ -171,7 +213,13 @@ export const deleteContactThunk = createAsyncThunk<
 export const ContactSlice = createSlice({
     name: "contact",
     initialState,
-    reducers: {},
+    reducers: {
+        logoutUser: (state) => {
+            state.currentUser = null;
+            state.loading = false;
+            state.error = null;
+        },
+    },
     extraReducers: (builder) => {
         builder
             // fetchContact
@@ -233,8 +281,21 @@ export const ContactSlice = createSlice({
             .addCase(deleteContactThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to delete contact";
+            })
+            .addCase(fetchUser.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchUser.fulfilled, (state, action) => {
+                state.loading = false;
+                state.currentUser = action.payload;
+            })
+            .addCase(fetchUser.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to get user";
             });
     }
 });
 
+export const { logoutUser } = ContactSlice.actions;
 export default ContactSlice.reducer;

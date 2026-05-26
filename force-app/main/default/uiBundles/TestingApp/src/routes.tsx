@@ -5,6 +5,8 @@ import ChartDataPage from './pages/ChartData';
 import ContactData from './pages/ContactData';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
+import LoginPage from './pages/Login';
+import ProtectedRoute from './pages/ProtectedRoute';
 
 export const routes: RouteObject[] = [
   {
@@ -13,23 +15,36 @@ export const routes: RouteObject[] = [
     children: [
       {
         index: true,
-        element: <Home />,
+        element: <LoginPage />,
+        handle: { showInNavigation: false, label: "Login" }
+      },
+      {
+        path: 'home',
+        element: <ProtectedRoute>
+          <Home />
+        </ProtectedRoute>,
         handle: { showInNavigation: true, label: "Home" }
       },
       {
         path: 'contact',
-        element: <ContactData />,
-        handle: { showInNavigation: false, label: "Contact" }
+        element: <ProtectedRoute>
+          <ContactData />
+        </ProtectedRoute>,
+        handle: { showInNavigation: true, label: "Contact" }
       },
       {
         path: 'todo',
-        element: <TodoListMainPage />,
-        handle: { showInNavigation: false, label: "Todo" }
+        element: <ProtectedRoute>
+          <TodoListMainPage />
+        </ProtectedRoute>,
+        handle: { showInNavigation: true, label: "Todo" }
       },
       {
         path: 'chart',
-        element: <ChartDataPage />,
-        handle: { showInNavigation: false, label: "ChartData" }
+        element: <ProtectedRoute>
+          <ChartDataPage />
+        </ProtectedRoute>,
+        handle: { showInNavigation: true, label: "ChartData" }
       },
       {
         path: '*',

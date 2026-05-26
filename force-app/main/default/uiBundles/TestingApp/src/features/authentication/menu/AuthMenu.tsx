@@ -2,6 +2,7 @@ import { CircleUser, LogIn, LogOut, UserPen, UserPlus } from "lucide-react";
 import { Link } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { ROUTES } from "../authenticationConfig";
+import { useRedux } from "@/hook/useRedux";
 import { Button } from "../../../components/ui/button";
 import { Skeleton } from "../../../components/ui/skeleton";
 import {
@@ -31,6 +32,9 @@ export interface AuthMenuProps {
 
 export function AuthMenu({ trigger, guestContent, menuItems, className }: AuthMenuProps) {
 	const { user, isAuthenticated, loading, logout } = useAuth();
+	const { selector } = useRedux();
+	const currentUser = selector((state) => state.contact.currentUser);
+	const displayUser = currentUser || user;
 
 	if (loading) {
 		return <Skeleton className="size-8 rounded-full" />;
@@ -46,7 +50,7 @@ export function AuthMenu({ trigger, guestContent, menuItems, className }: AuthMe
 		</Button>
 	);
 
-	const triggerNode = (isAuthenticated && user && trigger?.(user)) || defaultTrigger;
+	const triggerNode = (isAuthenticated && displayUser && trigger?.(displayUser)) || defaultTrigger;
 
 	return (
 		<DropdownMenu>
@@ -55,7 +59,7 @@ export function AuthMenu({ trigger, guestContent, menuItems, className }: AuthMe
 			<DropdownMenuContent align="end" className={className ?? "w-48"}>
 				{isAuthenticated ? (
 					<>
-						<DropdownMenuLabel className="truncate">{user?.name}</DropdownMenuLabel>
+						<DropdownMenuLabel className="truncate">{displayUser?.name}</DropdownMenuLabel>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem asChild>
 							<Link to={ROUTES.PROFILE.PATH}>

@@ -21,7 +21,6 @@ export default function HomePage() {
 			})
 	};
 
-
 	return (
 		<div className="mx-auto heroClass px-8 sm:px-6 lg:px-3 py-12 h-full w-full bg-cover bg-center">
 			<div className="h-full px-6 py-6 flex items-center justify-center">

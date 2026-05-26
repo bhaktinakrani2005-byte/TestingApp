@@ -1,18 +1,20 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { getCurrentUser } from "@salesforce/ui-bundle/api";
+import { logoutUser } from "@/store/slice/ContactSlice";
 import { API_ROUTES } from "../authenticationConfig";
+import { useRedux } from "@/hook/useRedux";
 
 interface User {
 	readonly id: string;
 	readonly name: string;
+	readonly email?: string;
 }
+
 
 interface AuthContextType {
 	user: User | null;
 	isAuthenticated: boolean;
 	loading: boolean;
 	error: string | null;
-	checkAuth: () => Promise<void>;
 	logout: (startURL?: string) => void;
 }
 
@@ -23,45 +25,52 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-	const [user, setUser] = useState<User | null>(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
+	const { dispatch, selector } = useRedux();
 
-	const checkAuth = useCallback(async () => {
-		setLoading(true);
-		setError(null);
+	const user = selector(
+		(state) => state.contact.currentUser
+	);
 
-		try {
-			const userData = await getCurrentUser();
-			setUser(userData);
-		} catch (err) {
-			const errorMessage = err instanceof Error ? err.message : "Authentication failed";
-			setError(errorMessage);
-			setUser(null);
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+	const loading = selector(
+		(state) => state.contact.loading
+	);
 
-	const logout = useCallback((startURL?: string) => {
-		// Navigate to logout URL (server-side endpoint)
-		// Use replace to prevent back button from returning to authenticated session
-		const finalLogoutUrl = startURL
-			? `${API_ROUTES.LOGOUT}?startURL=${encodeURIComponent(startURL)}`
-			: API_ROUTES.LOGOUT;
-		window.location.replace(finalLogoutUrl);
-	}, []);
+	const error = selector(
+		(state) => state.contact.error
+	);
 
-	useEffect(() => {
-		checkAuth();
-	}, [checkAuth]);
+
+	// const logout = useCallback((startURL?: string) => {
+	// 	// Navigate to logout URL (server-side endpoint)
+	// 	// Use replace to prevent back button from returning to authenticated session
+	// 	const finalLogoutUrl = startURL
+	// 		? `${API_ROUTES.LOGOUT}?startURL=${encodeURIComponent(startURL)}`
+	// 		: API_ROUTES.LOGOUT;
+	// 	window.location.replace(finalLogoutUrl);
+	// }, []);
+
+	const logout = useCallback(
+		(startURL?: string) => {
+
+			dispatch(logoutUser());
+
+			localStorage.removeItem("persist:root");
+
+			const finalLogoutUrl = startURL
+				? `${API_ROUTES.LOGOUT}?startURL=${encodeURIComponent(startURL)}`
+				: API_ROUTES.LOGOUT;
+
+			window.location.replace('/');
+
+		},
+		[dispatch]
+	);
 
 	const value: AuthContextType = {
 		user,
 		isAuthenticated: user !== null,
 		loading,
 		error,
-		checkAuth,
 		logout,
 	};
 
