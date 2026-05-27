@@ -81,6 +81,108 @@ export async function getContact(contactId: string): Promise<ContactData | null>
 }
 
 
+export interface CreateContactInput {
+  FirstName?: string;
+  LastName: string;
+  Email?: string;
+  Phone?: string;
+  Title?: string;
+}
+
+interface CreateContactResponse {
+  uiapi: {
+    ContactCreate: {
+      Record: {
+        Id: string;
+        FirstName?: {
+          value: string;
+        };
+        LastName?: {
+          value: string;
+        };
+        Name?: {
+          value: string;
+        };
+        Email?: {
+          value: string;
+        };
+        Phone?: {
+          value: string;
+        };
+        Title?: {
+          value: string;
+        };
+      };
+    };
+  };
+}
+
+export async function createContact(contactData: CreateContactInput) {
+  try {
+    const mutation = `
+            mutation CreateContact($input: ContactInput!) {
+                uiapi {
+                    ContactCreate(input: { Contact: $input }) {
+                        Record {
+                            Id
+                            Name {
+                                value
+                            }
+                            FirstName {
+                                value
+                            }
+                            LastName {
+                                value
+                            }
+                            Email {
+                                value
+                            }
+                            Phone {
+                                value
+                            }
+                            Title {
+                                value
+                            }
+                        }
+                    }
+                }
+            }
+        `;
+
+    const result = await executeGraphQL<
+      CreateContactResponse,
+      {
+        input: CreateContactInput;
+      }
+    >(mutation, {
+      input: contactData,
+    });
+
+    const createdContact =
+      result?.uiapi?.ContactCreate?.Record;
+
+    if (!createdContact?.Id) {
+      throw new Error('Contact creation failed');
+    }
+    console.log('Created contact:', createdContact?.Id);
+    return {
+      success: true,
+      contact: createdContact,
+    };
+  } catch (error) {
+    console.error('Create Contact Error:', error);
+
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Error creating contact',
+    };
+  }
+}
+
+
 export async function getAllContacts() {
   try {
     const query = `

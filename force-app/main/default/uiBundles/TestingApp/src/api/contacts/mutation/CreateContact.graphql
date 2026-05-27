@@ -1,0 +1,27 @@
+mutation CreateContact($input: ContactInput!) {
+  uiapi {
+    ContactCreate(input: $input) {
+      Record {
+        Id
+        Name {
+          value
+        }
+        FirstName {
+          value
+        }
+        LastName {
+          value
+        }
+        Email {
+          value
+        }
+        Phone {
+          value
+        }
+        Title {
+          value
+        }
+      }
+    }
+  }
+}

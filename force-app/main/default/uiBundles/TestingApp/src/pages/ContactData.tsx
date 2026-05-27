@@ -54,7 +54,9 @@ export default function ContactData() {
     };
 
     const filteredContacts = contactList?.filter((contact) =>
-        contact.name?.toLowerCase().includes(search.toLowerCase())
+        contact.name?.toLowerCase().includes(search.toLowerCase()) ||
+        contact.email?.toLowerCase().includes(search.toLowerCase()) ||
+        contact.title?.toLowerCase().includes(search.toLowerCase())
     );
 
     const handleNewContact = () => {
@@ -119,6 +121,7 @@ export default function ContactData() {
                         />
 
                         <Button
+                            type="button"
                             variant="outline"
                             size="icon"
                             className="shrink-0"
@@ -128,6 +131,7 @@ export default function ContactData() {
                         </Button>
 
                         <Button
+                            type="button"
                             onClick={() => handleNewContact()}
                         >
                             New
@@ -135,6 +139,12 @@ export default function ContactData() {
 
                     </div>
 
+                </div>
+
+                <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-gray-700">
+                        Contacts :  {contactList.length}
+                    </h2>
                 </div>
 
                 {/* CONTACT LIST */}
