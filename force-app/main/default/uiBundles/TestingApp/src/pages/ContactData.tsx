@@ -17,7 +17,7 @@ import {
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { toast } from 'sonner';
-import { updateContactThunk, deleteContactThunk, fetchContactList } from '../store/slice/ContactSlice';
+import { updateContactThunk, deleteContactThunk, fetchContactList, fetchContact } from '../store/slice/ContactSlice';
 import { useRedux } from '@/hook/useRedux';
 
 export default function ContactData() {
@@ -35,6 +35,7 @@ export default function ContactData() {
     });
     const [isUpdating, setIsUpdating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [search, setSearch] = useState('');
 
 
     useEffect(() => {
@@ -47,11 +48,26 @@ export default function ContactData() {
         }
     }, [contact]);
 
+    const handleContactClick = (contact: any) => {
+        dispatch(fetchContact(contact.id));
+        console.log('Contact clicked:');
+    };
+
+    const filteredContacts = contactList?.filter((contact) =>
+        contact.name?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const handleNewContact = () => {
+        console.log('New contact button clicked');
+        navigate('/new-contact');
+    }
+
     const handleUpdate = async () => {
         if (!contact) return;
         setIsUpdating(true);
         try {
             await dispatch(updateContactThunk({ contactId: contact.id, values: editValues })).unwrap();
+            // await dispatch(fetchContact(contact.id)).unwrap();
             toast.success('Contact updated successfully!');
             setIsEditDialogOpen(false);
             setTimeout(() => {
@@ -98,6 +114,8 @@ export default function ContactData() {
                         <Input
                             placeholder="Search contacts..."
                             className="h-10"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
                         />
 
                         <Button
@@ -109,16 +127,23 @@ export default function ContactData() {
                             <RefreshCcw className="size-4" />
                         </Button>
 
+                        <Button
+                            onClick={() => handleNewContact()}
+                        >
+                            New
+                        </Button>
+
                     </div>
 
                 </div>
 
                 {/* CONTACT LIST */}
                 <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                    {contactList?.map(contact => {
+                    {filteredContacts?.map(contact => {
                         return (
                             <div
                                 key={contact.id}
+                                onClick={() => handleContactClick(contact)}
                                 className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-3 py-2 hover:bg-gray-50 transition cursor-pointer"
                             >
                                 {/* LEFT */}
@@ -150,7 +175,6 @@ export default function ContactData() {
                         )
 
                     })}
-                    {/* <Button onClick={() => dispatch(fetchContactList())}>Get Contact List</Button> */}
                 </div>
 
             </aside>
@@ -158,10 +182,7 @@ export default function ContactData() {
             {/* MAIN CONTENT */}
             <div className="p-4 md:p-8 space-y-8 flex-1">
                 <div className="flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-                            <ArrowLeft className="size-5" />
-                        </Button>
+                    <div className="flex items-center">
                         <h1 className="text-3xl font-bold">Contact Details</h1>
                     </div>
                     <div className="flex items-center gap-2">
@@ -341,7 +362,7 @@ export default function ContactData() {
                 ) : (
                     <Card className="border-red-200 bg-red-50">
                         <CardContent className="py-8 text-center text-red-600">
-                            No contact found for ID: {process.env.VITE_CONTACT_ID || '003Qy00000PeGVvIAN'}
+                            No contact found
                         </CardContent>
                     </Card>
                 )}

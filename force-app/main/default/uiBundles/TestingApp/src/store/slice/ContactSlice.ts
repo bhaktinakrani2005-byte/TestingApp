@@ -186,7 +186,7 @@ export const fetchDistinctCaseStatuses = createAsyncThunk<
 );
 
 export const updateContactThunk = createAsyncThunk<
-    ContactDetails,
+    Partial<ContactDetails>,
     { contactId: string; values: Partial<Omit<ContactData, 'id' | 'cases' | 'accountName' | 'accountIndustry' | 'accountPhone'>> },
     {
         rejectValue: string;
@@ -200,16 +200,12 @@ export const updateContactThunk = createAsyncThunk<
             if (!data) {
                 return rejectWithValue("Failed to update contact");
             }
-            const contactDetails: ContactDetails = {
+            const contactDetails: Partial<ContactDetails> = {
                 id: data.id,
                 name: data.name,
                 email: data.email,
                 accountId: data.accountId,
-                title: data.title,
-                accountName: data.accountName,
-                accountIndustry: data.accountIndustry || '',
-                accountPhone: data.accountPhone ?? null,
-                cases: []
+                title: data.title
             };
             return contactDetails;
         }

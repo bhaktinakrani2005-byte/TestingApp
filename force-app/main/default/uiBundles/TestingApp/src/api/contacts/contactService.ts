@@ -113,13 +113,13 @@ export async function getAllContacts() {
 
     const result: any = await executeGraphQL(query);
 
-    console.log(result?.uiapi?.query?.Contact?.edges, "GRAPHQL RESULT ",);
-    result?.uiapi?.query?.Contact?.edges?.map((edge: any) => ({
-      id: edge.node.Id,
-      name: edge.node.Name?.value,
-      email: edge.node.Email?.value,
-      title: edge.node.Title?.value,
-    }))
+    console.log("GRAPHQL RESULT", result);
+    // result?.uiapi?.query?.Contact?.edges?.map((edge: any) => ({
+    //   id: edge.node.Id,
+    //   name: edge.node.Name?.value,
+    //   email: edge.node.Email?.value,
+    //   title: edge.node.Title?.value,
+    // }))
 
     const data = result?.uiapi?.query?.Contact?.edges?.map((edge: any) => {
       return ({
@@ -185,7 +185,7 @@ export async function getDistinctCaseStatus() {
 export async function updateContact(
   contactId: string,
   values: Partial<Omit<ContactData, 'id' | 'cases' | 'accountName' | 'accountIndustry' | 'accountPhone'>>
-): Promise<ContactData | null> {
+): Promise<Partial<ContactData> | null> {
   try {
     const mutation = `
       mutation UpdateContact($input: ContactUpdateInput!) {
@@ -235,11 +235,7 @@ export async function updateContact(
       name: record.Name?.value,
       email: record.Email?.value,
       accountId: record.AccountId?.value,
-      title: record.Title?.value,
-      accountName: '', // These related fields aren't usually returned in an update mutation response
-      accountIndustry: '',
-      accountPhone: '',
-      cases: []
+      title: record.Title?.value
     };
   } catch (error) {
     console.error('Error updating contact:', error);

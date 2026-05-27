@@ -7,6 +7,7 @@ import Home from './pages/Home';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/Login';
 import ProtectedRoute from './pages/ProtectedRoute';
+import CreateContactForm from './pages/CreateContat';
 
 export const routes: RouteObject[] = [
   {
@@ -31,6 +32,13 @@ export const routes: RouteObject[] = [
           <ContactData />
         </ProtectedRoute>,
         handle: { showInNavigation: true, label: "Contact" }
+      },
+      {
+        path: 'new-contact',
+        element: <ProtectedRoute>
+          <CreateContactForm />
+        </ProtectedRoute>,
+        handle: { showInNavigation: false, label: "New Contact" }
       },
       {
         path: 'todo',
