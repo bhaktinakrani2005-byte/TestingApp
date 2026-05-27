@@ -1,4 +1,5 @@
 import { executeGraphQL } from '../graphqlClient';
+import { newContactInput, newContactResponse } from "@/store/slice/ContactSlice";
 
 export interface ContactData {
   id: string;
@@ -81,7 +82,7 @@ export async function getContact(contactId: string): Promise<ContactData | null>
 }
 
 
-export interface CreateContactInput {
+export interface ContactCreateInput {
   FirstName?: string;
   LastName: string;
   Email?: string;
@@ -89,7 +90,65 @@ export interface CreateContactInput {
   Title?: string;
 }
 
-interface CreateContactResponse {
+export async function createContact(
+  contactData: newContactInput
+): Promise<newContactResponse | null> {
+  try {
+    const mutation = `
+      mutation CreateContact($input: ContactCreateInput!) {
+        uiapi {
+          ContactCreate(input: $input) {
+            Record {
+              Id
+              FirstName @optional { value }
+              LastName @optional { value }
+              Email @optional { value }
+              Title @optional { value }
+            }
+          }
+        }
+      }
+    `;
+
+    const result = await executeGraphQL<
+      any,
+      { input: newContactInput }
+    >(mutation, {
+      input: {
+        firstName: contactData.firstName,
+        lastName: contactData.lastName,
+        email: contactData.email,
+        title: contactData.title,
+      },
+    });
+
+    const record = result?.uiapi?.ContactCreate?.Record;
+
+    if (!record) return null;
+
+    return {
+      id: record.Id,
+      firstName: record.FirstName?.value || "",
+      lastName: record.LastName?.value || "",
+      email: record.Email?.value || "",
+      title: record.Title?.value || "",
+    };
+  } catch (error) {
+    console.error("createContact error:", error);
+    return null;
+  }
+}
+
+
+export interface CreateContactInput1 {
+  FirstName?: string;
+  LastName: string;
+  Email?: string;
+  Phone?: string;
+  Title?: string;
+}
+
+interface CreateContactResponse1 {
   uiapi: {
     ContactCreate: {
       Record: {
@@ -117,70 +176,6 @@ interface CreateContactResponse {
   };
 }
 
-export async function createContact(contactData: CreateContactInput) {
-  try {
-    const mutation = `
-            mutation CreateContact($input: ContactInput!) {
-                uiapi {
-                    ContactCreate(input: { Contact: $input }) {
-                        Record {
-                            Id
-                            Name {
-                                value
-                            }
-                            FirstName {
-                                value
-                            }
-                            LastName {
-                                value
-                            }
-                            Email {
-                                value
-                            }
-                            Phone {
-                                value
-                            }
-                            Title {
-                                value
-                            }
-                        }
-                    }
-                }
-            }
-        `;
-
-    const result = await executeGraphQL<
-      CreateContactResponse,
-      {
-        input: CreateContactInput;
-      }
-    >(mutation, {
-      input: contactData,
-    });
-
-    const createdContact =
-      result?.uiapi?.ContactCreate?.Record;
-
-    if (!createdContact?.Id) {
-      throw new Error('Contact creation failed');
-    }
-    console.log('Created contact:', createdContact?.Id);
-    return {
-      success: true,
-      contact: createdContact,
-    };
-  } catch (error) {
-    console.error('Create Contact Error:', error);
-
-    return {
-      success: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Error creating contact',
-    };
-  }
-}
 
 
 export async function getAllContacts() {
@@ -229,6 +224,7 @@ export async function getAllContacts() {
         name: edge.node.Name?.value,
         email: edge.node.Email?.value,
         title: edge.node.Title?.value,
+        loading: false
       })
 
     })

@@ -1,6 +1,5 @@
-import { Navigate } from "react-router";
 import { useAuth } from "@/features/authentication/context/AuthContext";
-import LoadingTodos from "@/components/todo/LoadingTodos";
+import { Navigate } from "react-router";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
@@ -10,12 +9,7 @@ export default function ProtectedRoute({
     children,
 }: ProtectedRouteProps) {
 
-    const { isAuthenticated, loading } = useAuth();
-
-    // OPTIONAL LOADING STATE
-    if (loading) {
-        return <LoadingTodos />
-    }
+    const { isAuthenticated } = useAuth();
 
     // NOT LOGGED IN
     if (!isAuthenticated) {

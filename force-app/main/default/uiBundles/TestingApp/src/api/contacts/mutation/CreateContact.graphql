@@ -1,4 +1,4 @@
-mutation CreateContact($input: ContactInput!) {
+mutation CreateContact($input: ContactCreateInput!) {
   uiapi {
     ContactCreate(input: $input) {
       Record {
@@ -13,9 +13,6 @@ mutation CreateContact($input: ContactInput!) {
           value
         }
         Email {
-          value
-        }
-        Phone {
           value
         }
         Title {

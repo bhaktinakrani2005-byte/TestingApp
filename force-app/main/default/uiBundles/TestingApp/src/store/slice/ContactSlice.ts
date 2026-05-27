@@ -5,7 +5,8 @@ import {
     updateContact,
     deleteContact,
     ContactData,
-    getAllContacts
+    getAllContacts,
+    createContact
 } from "@/api/contacts/contactService";
 import { RootState } from "..";
 
@@ -27,6 +28,7 @@ export interface ContactDetails {
     accountIndustry: string;
     accountPhone: string | null;
     cases: Case[];
+    isLoading: boolean;
 }
 
 export interface CaseStatusCount {
@@ -43,20 +45,53 @@ export interface ContactListItem {
 
 interface ContactState {
     contact: ContactDetails | null;
-    contactList: ContactListItem[];
+    contactList: {
+        data: ContactListItem[],
+        isLoading: boolean,
+    },
     caseStatuses: CaseStatusCount[];
     loading: boolean;
     error: string | null;
     currentUser: CurrentUser | null;
+    newContactInput: newContactInput
+    newContactResponse: newContactResponse
 }
 
 const initialState: ContactState = {
-    contact: null,
-    contactList: [],
+    contact: {
+        id: "",
+        name: "",
+        cases: [],
+        email: "",
+        accountId: "",
+        title: "",
+        accountName: "",
+        accountIndustry: "",
+        accountPhone: null,
+        isLoading: false
+    },
+    contactList: {
+        data: [],
+        isLoading: false,
+
+    },
     caseStatuses: [],
     loading: false,
     error: null,
     currentUser: null,
+    newContactInput: {
+        firstName: "",
+        lastName: "",
+        email: "",
+        title: ""
+    },
+    newContactResponse: {
+        id: "",
+        firstName: "",
+        lastName: "",
+        email: "",
+        title: ""
+    }
 };
 
 export interface CurrentUser {
@@ -67,6 +102,23 @@ export interface CurrentUser {
     firstName: string;
     lastName: string;
 }
+
+
+export interface newContactInput {
+    firstName: string;
+    lastName: string;
+    email: string;
+    title: string;
+}
+
+export interface newContactResponse {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    title: string;
+}
+
 
 export async function getCurrentUser(): Promise<CurrentUser> {
     const response = await fetch('/services/data/v66.0/chatter/users/me');
@@ -99,6 +151,33 @@ export const fetchUser = createAsyncThunk<
     }
 )
 
+
+
+export const createContactThunk = createAsyncThunk<
+    newContactResponse,
+    newContactInput,
+    {
+        rejectValue: string;
+        state: RootState;
+    }
+>(
+    "contact/createContact",
+    async (payload, { rejectWithValue }) => {
+        try {
+            const data = await createContact(payload);
+
+            if (!data) {
+                return rejectWithValue("Failed to create contact");
+            }
+
+            return data;
+        } catch (error: any) {
+            console.log(error);
+            return rejectWithValue(error.message || "Failed to create contact");
+        }
+    }
+);
+
 export const fetchContactList = createAsyncThunk<
     ContactListItem[],
     void,
@@ -110,6 +189,8 @@ export const fetchContactList = createAsyncThunk<
         async (_, { rejectWithValue }) => {
             try {
                 const data = await getAllContacts();
+                console.log("Dtaa", data);
+
 
                 if (!data) {
                     return rejectWithValue("User not found");
@@ -117,7 +198,6 @@ export const fetchContactList = createAsyncThunk<
                 return data;
             }
             catch (error) {
-                console.log(error);
                 return rejectWithValue("Failed to fetch user");
             }
         });
@@ -140,6 +220,7 @@ export const fetchContact = createAsyncThunk<
             }
             const contactDetails: ContactDetails = {
                 id: data.id,
+                isLoading: false,
                 name: data.name,
                 email: data.email,
                 accountId: data.accountId,
@@ -206,6 +287,7 @@ export const updateContactThunk = createAsyncThunk<
                 email: data.email,
                 accountId: data.accountId,
                 title: data.title
+
             };
             return contactDetails;
         }
@@ -254,15 +336,22 @@ export const ContactSlice = createSlice({
         builder
             // fetchContact
             .addCase(fetchContact.pending, (state) => {
-                state.loading = true;
+                if (state.contact) {
+                    state.contact.isLoading = true;
+                }
                 state.error = null;
             })
             .addCase(fetchContact.fulfilled, (state, action) => {
-                state.loading = false;
+                if (state.contact) {
+                    state.contact.isLoading = false;
+                }
                 state.contact = action.payload;
             })
             .addCase(fetchContact.rejected, (state, action) => {
                 state.loading = false;
+                if (state.contact) {
+                    state.contact.isLoading = false;
+                }
                 state.error = action.payload || "Failed to fetch contact";
             })
             // fetchDistinctCaseStatuses
@@ -324,18 +413,46 @@ export const ContactSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload || "Failed to get user";
             })
-            .addCase(fetchContactList.pending, (state) => {
+            .addCase(createContactThunk.pending, (state) => {
                 state.loading = true;
                 state.error = null;
             })
-            .addCase(fetchContactList.fulfilled, (state, action) => {
+            .addCase(createContactThunk.fulfilled, (state, action) => {
                 state.loading = false;
-                console.log(action.payload, "action.payload");
-
-                state.contactList = action.payload;
+                state.newContactResponse = action.payload;
+            })
+            .addCase(createContactThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to get user";
+            })
+            .addCase(fetchContactList.pending, (state) => {
+                if (Array.isArray(state.contactList)) {
+                    state.contactList = { data: [...state.contactList], isLoading: true };
+                } else if (!state.contactList || typeof state.contactList !== 'object') {
+                    state.contactList = { data: [], isLoading: true };
+                } else {
+                    state.contactList.isLoading = true;
+                }
+                state.error = null;
+            })
+            .addCase(fetchContactList.fulfilled, (state, action) => {
+                if (Array.isArray(state.contactList)) {
+                    state.contactList = { data: Array.isArray(action.payload) ? [...action.payload] : [], isLoading: false };
+                } else if (!state.contactList || typeof state.contactList !== 'object') {
+                    state.contactList = { data: Array.isArray(action.payload) ? [...action.payload] : [], isLoading: false };
+                } else {
+                    state.contactList.isLoading = false;
+                    state.contactList.data = Array.isArray(action.payload) ? [...action.payload] : [];
+                }
             })
             .addCase(fetchContactList.rejected, (state, action) => {
-                state.loading = false;
+                if (Array.isArray(state.contactList)) {
+                    state.contactList = { data: [...state.contactList], isLoading: false };
+                } else if (!state.contactList || typeof state.contactList !== 'object') {
+                    state.contactList = { data: [], isLoading: false };
+                } else {
+                    state.contactList.isLoading = false;
+                }
                 state.error = action.payload || "Failed to get contact list";
             });
     }

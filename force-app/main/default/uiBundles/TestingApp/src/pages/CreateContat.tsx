@@ -1,38 +1,48 @@
 import React from 'react';
-import { ArrowLeft, UserPlus } from 'lucide-react';
+import { ArrowLeft, UserPlus, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { createContact } from '@/api/contacts/contactService';
-import { useRedux } from '@/hook/useRedux';
+//import { useRedux } from '@/hook/useRedux';
 
 interface FormData {
     firstName: string;
     lastName: string;
     email: string;
-    phone: string;
     title: string;
-    accountId: string;
 }
 
 interface FormErrors {
     firstName?: string;
     lastName?: string;
     email?: string;
-    phone?: string;
     title?: string;
-    accountId?: string;
 }
 
 export default function CreateContactForm() {
     const navigate = useNavigate();
-    const { dispatch } = useRedux();
+    //const { dispatch } = useRedux();
     const [formData, setFormData] = React.useState<FormData>({
         firstName: '',
         lastName: '',
         email: '',
-        phone: '',
-        title: '',
-        accountId: ''
+        title: ''
     });
+
+    const clearForm = () => {
+        setFormData({
+            firstName: '',
+            lastName: '',
+            email: '',
+            title: ''
+        });
+
+        setErrors({
+            firstName: '',
+            lastName: '',
+            email: '',
+            title: ''
+        });
+    }
 
     const [errors, setErrors] = React.useState<FormErrors>({});
     const [loading, setLoading] = React.useState(false);
@@ -60,21 +70,8 @@ export default function CreateContactForm() {
 
                 return '';
 
-            case 'phone':
-                if (!value.trim()) return 'Phone number is required';
-
-                if (!/^\d{10}$/.test(value)) {
-                    return 'Phone number must be 10 digits';
-                }
-
-                return '';
-
             case 'title':
                 if (!value.trim()) return 'Title is required';
-                return '';
-
-            case 'accountId':
-                if (!value.trim()) return 'Account ID is required';
                 return '';
 
             default:
@@ -139,81 +136,60 @@ export default function CreateContactForm() {
         }));
     };
 
-    const handleSubmit = async (
-        e: React.FormEvent<HTMLFormElement>
-    ) => {
-
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        const isValid = validateForm();
-
-        if (!isValid) return;
+        if (!validateForm()) return;
 
         try {
-
             setLoading(true);
 
-            console.log('FORM DATA:', formData);
+            const payload = {
+                FirstName: formData.firstName,
+                LastName: formData.lastName,
+                Email: formData.email,
+                Title: formData.title
+            };
 
-            // await new Promise((resolve) => setTimeout(resolve, 1500));
-            const response = await createContact(formData as any);
+            console.log("SENDING PAYLOAD:", payload);
 
-            if (response.success) {
-                alert('Contact created successfully');
-                setFormData({
-                    firstName: '',
-                    lastName: '',
-                    email: '',
-                    phone: '',
-                    title: '',
-                    accountId: ''
-                });
+            const response = await createContact(payload);
 
-                navigate('/contact');
+            console.log("CREATE RESPONSE:", response);
 
-                console.log(response.contact);
-            } else {
-                alert(response.error);
+            if (response?.error) {
+                throw new Error(response.error);
             }
-            setErrors({});
+
+            alert('Contact created successfully');
+
+            clearForm();
+
+            navigate('/contact');
 
         } catch (error) {
-
             console.error(error);
             alert('Failed to create contact');
-
         } finally {
-
             setLoading(false);
         }
     };
 
-    const inputClass = (field: keyof FormErrors) => {
-
-        return `
-      w-full
-      rounded-2xl
-      border
-      px-4
-      py-3
-      text-sm
-      outline-none
-      transition-all
-      duration-200
-      bg-white
-      ${errors[field]
-                ? 'border-red-500 focus:ring-4 focus:ring-red-100'
-                : 'border-gray-300 focus:ring-4 focus:ring-blue-100 focus:border-blue-500'}
-    `;
-    };
+    const inputClass = (field: keyof typeof errors) => `
+    w-full px-4 py-3 rounded-2xl border outline-none transition-all duration-200
+    ${errors[field]
+            ? 'border-red-500 bg-red-50 animate-shake'
+            : 'border-gray-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-100'
+        }
+`;
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 flex items-center justify-center p-4">
 
-            <div className="w-full max-w-4xl bg-white rounded-[32px] shadow-2xl overflow-hidden border border-gray-200">
+            <div className="w-full max-w-4xl bg-white rounded-[20px] shadow-2xl overflow-hidden border border-gray-200">
 
                 {/* HEADER */}
-                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6 flex items-center justify-between">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-5 py-4 flex items-center justify-between">
 
                     <div className="flex items-center gap-4">
 
@@ -225,10 +201,6 @@ export default function CreateContactForm() {
                             <h1 className="text-3xl font-bold text-white">
                                 Create Contact
                             </h1>
-
-                            <p className="text-blue-100 mt-1 text-sm">
-                                Add a new contact into Salesforce CRM
-                            </p>
                         </div>
                     </div>
 
@@ -237,29 +209,42 @@ export default function CreateContactForm() {
                         onClick={() => navigate('/contact')}
                         className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-5 py-3 rounded-2xl transition-all duration-200"
                     >
-                        <ArrowLeft size={18} />
-                        Back
+                        {/* <ArrowLeft size={18} />
+                        Back */}
+                        <X size={20} />
                     </button>
                 </div>
 
                 {/* FORM */}
                 <form
                     onSubmit={handleSubmit}
-                    className="p-8 space-y-7"
+                    className="p-5 space-y-7"
                 >
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                         {/* FIRST NAME */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                First Name
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label
+                                    className="text-sm font-semibold text-gray-700"
+                                    htmlFor="fname"
+                                >
+                                    First Name
+                                    <span className="text-red-500 ml-1">*</span>
+                                </label>
+
+                                {errors.firstName && (
+                                    <p className="text-red-500 text-xs font-medium">
+                                        {errors.firstName}
+                                    </p>
+                                )}
+                            </div>
 
                             <input
                                 type="text"
                                 name="firstName"
+                                id="fname"
                                 value={formData.firstName}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
@@ -267,131 +252,87 @@ export default function CreateContactForm() {
                                 className={inputClass('firstName')}
                             />
 
-                            {errors.firstName && (
-                                <p className="text-red-500 text-sm mt-2 font-medium">
-                                    {errors.firstName}
-                                </p>
-                            )}
                         </div>
 
                         {/* LAST NAME */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Last Name
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="lname">
+                                    Last Name
+                                    <span className="text-red-500 ml-1">*</span>
+                                </label>
+
+                                {errors.lastName && (
+                                    <p className="text-red-500 text-sm mt-2 font-medium">
+                                        {errors.lastName}
+                                    </p>
+                                )}
+                            </div>
 
                             <input
                                 type="text"
                                 name="lastName"
+                                id="lname"
                                 value={formData.lastName}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 placeholder="Enter last name"
                                 className={inputClass('lastName')}
                             />
-
-                            {errors.lastName && (
-                                <p className="text-red-500 text-sm mt-2 font-medium">
-                                    {errors.lastName}
-                                </p>
-                            )}
                         </div>
 
                         {/* EMAIL */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Email
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="email">
+                                    Email
+                                    <span className="text-red-500 ml-1">*</span>
+                                </label>
+
+                                {errors.email && (
+                                    <p className="text-red-500 text-sm mt-2 font-medium">
+                                        {errors.email}
+                                    </p>
+                                )}
+                            </div>
 
                             <input
                                 type="email"
                                 name="email"
+                                id="email"
                                 value={formData.email}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 placeholder="Enter email address"
                                 className={inputClass('email')}
                             />
-
-                            {errors.email && (
-                                <p className="text-red-500 text-sm mt-2 font-medium">
-                                    {errors.email}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* PHONE */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Phone Number
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-
-                            <input
-                                type="text"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                placeholder="Enter phone number"
-                                className={inputClass('phone')}
-                            />
-
-                            {errors.phone && (
-                                <p className="text-red-500 text-sm mt-2 font-medium">
-                                    {errors.phone}
-                                </p>
-                            )}
                         </div>
 
                         {/* TITLE */}
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Job Title
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2" htmlFor="title">
+                                    Job Title
+                                    <span className="text-red-500 ml-1">*</span>
+                                </label>
+
+                                {errors.title && (
+                                    <p className="text-red-500 text-sm mt-2 font-medium">
+                                        {errors.title}
+                                    </p>
+                                )}
+                            </div>
 
                             <input
                                 type="text"
                                 name="title"
+                                id="title"
                                 value={formData.title}
                                 onChange={handleChange}
                                 onBlur={handleBlur}
                                 placeholder="Enter job title"
                                 className={inputClass('title')}
                             />
-
-                            {errors.title && (
-                                <p className="text-red-500 text-sm mt-2 font-medium">
-                                    {errors.title}
-                                </p>
-                            )}
-                        </div>
-
-                        {/* ACCOUNT ID */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Account ID
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-
-                            <input
-                                type="text"
-                                name="accountId"
-                                value={formData.accountId}
-                                onChange={handleChange}
-                                onBlur={handleBlur}
-                                placeholder="Enter Salesforce account ID"
-                                className={inputClass('accountId')}
-                            />
-
-                            {errors.accountId && (
-                                <p className="text-red-500 text-sm mt-2 font-medium">
-                                    {errors.accountId}
-                                </p>
-                            )}
                         </div>
                     </div>
 
@@ -400,10 +341,10 @@ export default function CreateContactForm() {
 
                         <button
                             type="button"
-                            onClick={() => navigate('/contact')}
+                            onClick={() => clearForm()}
                             className="px-6 py-3 rounded-2xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-all duration-200"
                         >
-                            Cancel
+                            Clear
                         </button>
 
                         <button
@@ -415,7 +356,8 @@ export default function CreateContactForm() {
                         </button>
                     </div>
                 </form>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
+
