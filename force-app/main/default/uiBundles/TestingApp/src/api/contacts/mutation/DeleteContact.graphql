@@ -1,7 +1,7 @@
-mutation DeleteContact($input: ContactDeleteInput!) {
-  uiapi(input: { allOrNone: true }) {
+mutation DeleteContact($input: RecordDeleteInput!) {
+  uiapi {
     ContactDelete(input: $input) {
-      deletedRecordId
+      Id
     }
   }
 }

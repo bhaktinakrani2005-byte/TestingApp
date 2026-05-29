@@ -1,3 +1,14 @@
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
     if (pack || arguments.length === 2) for (var i = 0, l = from.length, ar; i < l; i++) {
         if (ar || !(i in from)) {
@@ -19,11 +30,13 @@ var schemaPath = resolve(__dirname, '../../../../../schema.graphql');
 var schemaExists = existsSync(schemaPath);
 export default defineConfig(function (_a) {
     var mode = _a.mode;
-    var env = loadEnv(mode, process.cwd(), '');
+    var env = loadEnv(mode, __dirname, '');
+    var envDefinitions = Object.keys(env).reduce(function (acc, key) {
+        acc["process.env.".concat(key)] = JSON.stringify(env[key]);
+        return acc;
+    }, {});
     return {
-        define: {
-            'process.env': env
-        },
+        define: __assign(__assign({}, envDefinitions), { 'process.env': JSON.stringify(env) }),
         base: './',
         plugins: __spreadArray([
             tailwindcss(),

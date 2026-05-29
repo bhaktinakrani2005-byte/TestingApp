@@ -6,6 +6,12 @@ mutation UpdateContact($input: ContactUpdateInput!) {
         Name @optional {
           value
         }
+        FirstName @optional {
+          value
+        }
+        LastName @optional {
+          value
+        }
         Email @optional {
           value
         }

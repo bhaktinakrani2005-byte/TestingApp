@@ -1,3 +1,4 @@
+import { toast } from 'sonner';
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
     getContact,
@@ -21,6 +22,8 @@ export interface Case {
 export interface ContactDetails {
     id: string;
     name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     accountId: string;
     title: string;
@@ -61,6 +64,8 @@ const initialState: ContactState = {
     contact: {
         id: "",
         name: "",
+        firstName: "",
+        lastName: "",
         cases: [],
         email: "",
         accountId: "",
@@ -164,16 +169,18 @@ export const createContactThunk = createAsyncThunk<
     "contact/createContact",
     async (payload, { rejectWithValue }) => {
         try {
+            console.log("payload : ", payload);
             const data = await createContact(payload);
-
+            console.log("Data", data);
             if (!data) {
                 return rejectWithValue("Failed to create contact");
             }
 
             return data;
         } catch (error: any) {
-            console.log(error);
-            return rejectWithValue(error.message || "Failed to create contact");
+            return rejectWithValue(
+                error.message || "Failed to create contact"
+            );
         }
     }
 );
@@ -222,6 +229,8 @@ export const fetchContact = createAsyncThunk<
                 id: data.id,
                 isLoading: false,
                 name: data.name,
+                firstName: data.firstName || "",
+                lastName: data.lastName || "",
                 email: data.email,
                 accountId: data.accountId,
                 title: data.title,
@@ -284,6 +293,8 @@ export const updateContactThunk = createAsyncThunk<
             const contactDetails: Partial<ContactDetails> = {
                 id: data.id,
                 name: data.name,
+                firstName: data.firstName ?? '',
+                lastName: data.lastName ?? '',
                 email: data.email,
                 accountId: data.accountId,
                 title: data.title
@@ -326,11 +337,12 @@ export const ContactSlice = createSlice({
     name: "contact",
     initialState,
     reducers: {
-        logoutUser: (state) => {
-            state.currentUser = null;
-            state.loading = false;
-            state.error = null;
-        },
+        // logoutUser: (state) => {
+        //     state.currentUser = null;
+        //     state.loading = false;
+        //     state.error = null;
+        // },
+        logoutContact: () => initialState,
     },
     extraReducers: (builder) => {
         builder
@@ -400,6 +412,7 @@ export const ContactSlice = createSlice({
             .addCase(deleteContactThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to delete contact";
+                toast.error(state.error);
             })
             .addCase(fetchUser.pending, (state) => {
                 state.loading = true;
@@ -412,6 +425,7 @@ export const ContactSlice = createSlice({
             .addCase(fetchUser.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to get user";
+                toast.error(state.error);
             })
             .addCase(createContactThunk.pending, (state) => {
                 state.loading = true;
@@ -424,6 +438,7 @@ export const ContactSlice = createSlice({
             .addCase(createContactThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to get user";
+                toast.error(state.error);
             })
             .addCase(fetchContactList.pending, (state) => {
                 if (Array.isArray(state.contactList)) {
@@ -458,5 +473,5 @@ export const ContactSlice = createSlice({
     }
 });
 
-export const { logoutUser } = ContactSlice.actions;
+export const { logoutContact } = ContactSlice.actions;
 export default ContactSlice.reducer;

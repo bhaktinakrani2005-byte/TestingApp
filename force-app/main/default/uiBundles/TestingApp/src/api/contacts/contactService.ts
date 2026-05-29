@@ -1,9 +1,13 @@
+
+import { toast } from 'sonner';
 import { executeGraphQL } from '../graphqlClient';
 import { newContactInput, newContactResponse } from "@/store/slice/ContactSlice";
 
 export interface ContactData {
   id: string;
   name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   accountId: string;
   title: string;
@@ -24,6 +28,8 @@ export async function getContact(contactId: string): Promise<ContactData | null>
                 node {
                   Id
                   Name @optional { value }
+                  FirstName @optional { value }
+                  LastName @optional { value }
                   Email @optional { value }
                   AccountId @optional { value }
                   Title @optional { value }
@@ -60,6 +66,8 @@ export async function getContact(contactId: string): Promise<ContactData | null>
     return {
       id: edge.node.Id,
       name: edge.node.Name?.value,
+      firstName: edge.node.FirstName?.value ?? '',
+      lastName: edge.node.LastName?.value ?? '',
       email: edge.node.Email?.value,
       accountId: edge.node.AccountId?.value,
       title: edge.node.Title?.value,
@@ -83,17 +91,18 @@ export async function getContact(contactId: string): Promise<ContactData | null>
 
 
 export interface ContactCreateInput {
-  FirstName?: string;
-  LastName: string;
-  Email?: string;
-  Phone?: string;
-  Title?: string;
+  firstName?: string;
+  lastName: string;
+  email?: string;
+  title?: string;
 }
 
 export async function createContact(
   contactData: newContactInput
 ): Promise<newContactResponse | null> {
+
   try {
+
     const mutation = `
       mutation CreateContact($input: ContactCreateInput!) {
         uiapi {
@@ -110,21 +119,61 @@ export async function createContact(
       }
     `;
 
-    const result = await executeGraphQL<
-      any,
-      { input: newContactInput }
-    >(mutation, {
+    // FIELD VALIDATION
+    const FIELD_LIMITS = {
+      firstName: 15,
+      lastName: 15,
+      email: 30,
+      title: 20,
+    };
+
+    const fieldsToValidate = {
+      firstName: contactData.firstName,
+      lastName: contactData.lastName,
+      email: contactData.email,
+      title: contactData.title,
+    };
+
+    for (const [key, value] of Object.entries(fieldsToValidate)) {
+
+      if (!value) continue;
+
+      const maxLength =
+        FIELD_LIMITS[key as keyof typeof FIELD_LIMITS];
+
+      if (value.length > maxLength) {
+        toast.error(`${key} cannot exceed ${maxLength} characters`);
+        throw new Error(
+          `${key} cannot exceed ${maxLength} characters`
+        );
+      }
+    }
+
+    const variables = {
       input: {
-        firstName: contactData.firstName,
-        lastName: contactData.lastName,
-        email: contactData.email,
-        title: contactData.title,
+        Contact: {
+          FirstName: contactData.firstName,
+          LastName: contactData.lastName,
+          Email: contactData.email,
+          Title: contactData.title,
+        },
       },
-    });
+    };
+
+    console.log("variables :", variables);
+
+    const result = await executeGraphQL<any, typeof variables>(
+      mutation,
+      variables
+    );
+
+    console.log("result :", result);
 
     const record = result?.uiapi?.ContactCreate?.Record;
 
-    if (!record) return null;
+    if (!record) {
+      return null;
+    }
 
     return {
       id: record.Id,
@@ -133,48 +182,52 @@ export async function createContact(
       email: record.Email?.value || "",
       title: record.Title?.value || "",
     };
-  } catch (error) {
+
+  } catch (error: any) {
+
     console.error("createContact error:", error);
-    return null;
+
+    throw new Error(
+      error?.message || "Failed to create contact"
+    );
   }
 }
 
+// export interface CreateContactInput {
+//   FirstName?: string;
+//   LastName: string;
+//   Email?: string;
+//   Phone?: string;
+//   Title?: string;
+// }
 
-export interface CreateContactInput1 {
-  FirstName?: string;
-  LastName: string;
-  Email?: string;
-  Phone?: string;
-  Title?: string;
-}
-
-interface CreateContactResponse1 {
-  uiapi: {
-    ContactCreate: {
-      Record: {
-        Id: string;
-        FirstName?: {
-          value: string;
-        };
-        LastName?: {
-          value: string;
-        };
-        Name?: {
-          value: string;
-        };
-        Email?: {
-          value: string;
-        };
-        Phone?: {
-          value: string;
-        };
-        Title?: {
-          value: string;
-        };
-      };
-    };
-  };
-}
+// interface CreateContactResponse1 {
+//   uiapi: {
+//     ContactCreate: {
+//       Record: {
+//         Id: string;
+//         FirstName?: {
+//           value: string;
+//         };
+//         LastName?: {
+//           value: string;
+//         };
+//         Name?: {
+//           value: string;
+//         };
+//         Email?: {
+//           value: string;
+//         };
+//         Phone?: {
+//           value: string;
+//         };
+//         Title?: {
+//           value: string;
+//         };
+//       };
+//     };
+//   };
+// }
 
 
 
@@ -292,6 +345,8 @@ export async function updateContact(
             Record {
               Id
               Name @optional { value }
+              FirstName @optional { value }
+              LastName @optional { value }
               Email @optional { value }
               AccountId @optional { value }
               Title @optional { value }
@@ -304,15 +359,18 @@ export async function updateContact(
     // Map fields from the flat input to the structure expected by Salesforce ContactUpdateInput.
     // Since Name is a read-only compound field in Salesforce, we must update FirstName and LastName instead.
     const contactFields: Record<string, any> = {};
-    if (values.name) {
-      const parts = values.name.trim().split(/\s+/);
-      if (parts.length > 1) {
-        contactFields.FirstName = parts[0];
-        contactFields.LastName = parts.slice(1).join(' ');
-      } else {
-        contactFields.LastName = parts[0];
-      }
-    }
+    console.log('values are', values);
+    // if (values.name) {
+    //   const parts = values.name.trim().split(/\s+/);
+    //   if (parts.length > 1) {
+    //     contactFields.FirstName = parts[0];
+    //     contactFields.LastName = parts.slice(1).join(' ');
+    //   } else {
+    //     contactFields.LastName = parts[0];
+    //   }
+    // }
+    if (values.firstName) contactFields.FirstName = values.firstName;
+    if (values.lastName) contactFields.LastName = values.lastName;
     if (values.email) contactFields.Email = values.email;
     if (values.accountId) contactFields.AccountId = values.accountId;
     if (values.title) contactFields.Title = values.title;
@@ -331,6 +389,8 @@ export async function updateContact(
     return {
       id: record.Id,
       name: record.Name?.value,
+      firstName: record.FirstName?.value,
+      lastName: record.LastName?.value,
       email: record.Email?.value,
       accountId: record.AccountId?.value,
       title: record.Title?.value
@@ -341,32 +401,57 @@ export async function updateContact(
   }
 }
 
+
 export async function deleteContact(contactId: string) {
+  console.log('delete called from service');
   try {
     const mutation = `
-      mutation DeleteContact($input: ContactDeleteInput!) {
-        uiapi(input: { allOrNone: true }) {
-          ContactDelete(input: $input) {
-            deletedRecordId
-          }
-        }
-      }
-    `;
+        mutation DeleteContact($input: RecordDeleteInput!) {
+          uiapi {
+            ContactDelete(input: $input) {
+                Id
+              }
+            }
+        }`;
+    console.log('id to be deleted');
+    const result = await executeGraphQL<any, { input: any }>(
+      mutation,
+      { input: { Id: contactId } }
+    );
 
-    const result = await executeGraphQL<any, { input: any }>(mutation, {
-      input: {
-        Id: contactId
-      }
-    });
+    console.log("delete result :", result);
 
-    const deletedRecordId = result?.uiapi?.ContactDelete?.deletedRecordId;
-    if (!deletedRecordId) return null;
+    const deletedRecordId = result?.uiapi?.ContactDelete?.Id;
+    if (!deletedRecordId) {
+      return null;
+    }
 
     return {
-      id: deletedRecordId
+      id: deletedRecordId,
     };
-  } catch (error) {
-    console.error('Error deleting contact:', error);
-    return null;
+  } catch (error: any) {
+
+    console.error("Error deleting contact:", error);
+
+    const errorMessage =
+      error?.message || "Failed to delete contact";
+
+    const lowerError = errorMessage.toLowerCase();
+
+    if (
+      lowerError.includes("case") ||
+      lowerError.includes("cases") ||
+      lowerError.includes("associated") ||
+      lowerError.includes("related") ||
+      lowerError.includes("delete")
+    ) {
+
+      throw new Error(
+        "Cannot delete contact because it has related cases."
+      );
+    }
+
+    throw new Error(errorMessage);
   }
 }
+

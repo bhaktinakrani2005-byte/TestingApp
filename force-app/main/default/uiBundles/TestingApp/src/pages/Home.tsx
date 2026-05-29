@@ -1,24 +1,23 @@
+import { useRedux } from '@/hook/useRedux';
+import { fetchContactList } from '@/store/slice/ContactSlice';
+// import { fetchContact } from '@/store/slice/ContactSlice';
 import { Navigate, useNavigate } from 'react-router-dom';
-// import { fetchContact } from '../store/slice/ContactSlice';
-// import { useRedux } from '@/hook/useRedux';
-
-
 
 export default function HomePage() {
+	const { dispatch } = useRedux();
 	const navigate = useNavigate();
-	// const { dispatch } = useRedux();
 	// const ContactId = process.env.VITE_CONTACT_ID;
 	const handleClick = () => {
 		navigate('/contact');
-		// dispatch(fetchContact(`${ContactId}`))
-		// 	.unwrap()
-		// 	.then(() => {
-		// 		navigate('/Contact');
-		// 	})
-		// 	.catch((error) => {
-		// 		navigate("/");
-		// 		console.error('Failed to fetch contact:', error);
-		// 	})
+		dispatch(fetchContactList())
+			.unwrap()
+			.then(() => {
+				navigate('/Contact');
+			})
+			.catch((error: any) => {
+				navigate("/");
+				console.error('Failed to fetch contact:', error);
+			})
 	};
 
 	return (

@@ -3,9 +3,6 @@ mutation CreateContact($input: ContactCreateInput!) {
     ContactCreate(input: $input) {
       Record {
         Id
-        Name {
-          value
-        }
         FirstName {
           value
         }

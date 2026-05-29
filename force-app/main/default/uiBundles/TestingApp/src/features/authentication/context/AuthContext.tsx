@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { logoutUser } from "@/store/slice/ContactSlice";
+import { logoutContact } from "@/store/slice/ContactSlice";
 import { API_ROUTES } from "../authenticationConfig";
 import { useRedux } from "@/hook/useRedux";
 
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const logout = useCallback(
 		(startURL?: string) => {
 
-			dispatch(logoutUser());
+			dispatch(logoutContact());
 
 			localStorage.removeItem("persist:root");
 
