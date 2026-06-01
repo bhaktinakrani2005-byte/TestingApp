@@ -326,9 +326,9 @@ export const deleteContactThunk = createAsyncThunk<
             }
             return data;
         }
-        catch (error) {
+        catch (error: any) {
             console.log(error);
-            return rejectWithValue("Failed to delete contact");
+            return rejectWithValue(error?.message || "Failed to delete contact");
         }
     }
 );
@@ -343,6 +343,10 @@ export const ContactSlice = createSlice({
         //     state.error = null;
         // },
         logoutContact: () => initialState,
+        // Clear selected contact without resetting whole state
+        clearContact: (state) => {
+            state.contact = null;
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -412,7 +416,6 @@ export const ContactSlice = createSlice({
             .addCase(deleteContactThunk.rejected, (state, action) => {
                 state.loading = false;
                 state.error = action.payload || "Failed to delete contact";
-                toast.error(state.error);
             })
             .addCase(fetchUser.pending, (state) => {
                 state.loading = true;
@@ -434,6 +437,15 @@ export const ContactSlice = createSlice({
             .addCase(createContactThunk.fulfilled, (state, action) => {
                 state.loading = false;
                 state.newContactResponse = action.payload;
+                // Prepend the newly created contact to the contact list for immediate UI update
+                // if (state.contactList && Array.isArray(state.contactList.data)) {
+                //     state.contactList.data.unshift({
+                //         id: action.payload.id,
+                //         name: `${action.payload.firstName} ${action.payload.lastName}`.trim(),
+                //         email: action.payload.email,
+                //         title: action.payload.title,
+                //     });
+                // }
             })
             .addCase(createContactThunk.rejected, (state, action) => {
                 state.loading = false;
@@ -473,5 +485,5 @@ export const ContactSlice = createSlice({
     }
 });
 
-export const { logoutContact } = ContactSlice.actions;
+export const { logoutContact, clearContact } = ContactSlice.actions;
 export default ContactSlice.reducer;

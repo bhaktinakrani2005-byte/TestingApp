@@ -13,7 +13,8 @@ import {
     deleteContactThunk,
     fetchContact,
     fetchContactList,
-    createContactThunk
+    createContactThunk,
+    clearContact
 } from '../store/slice/ContactSlice';
 import { useRedux } from '@/hook/useRedux';
 import SidebarLoader from '@/components/ui/SidebarLoader';
@@ -93,6 +94,7 @@ export default function ContactData() {
     // Delete modal
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
     const [search, setSearch] = useState('');
 
@@ -154,8 +156,26 @@ export default function ContactData() {
         setIsSubmitting(true);
         try {
             if (modal.mode === 'create') {
-                await dispatch(createContactThunk(formData)).unwrap();
+                // await dispatch(createContactThunk(formData)).unwrap();
+                // toast.success('Contact created successfully!');
+                // CREATE CONTACT
+                const createdContact = await dispatch(
+                    createContactThunk(formData)
+                ).unwrap();
+
                 toast.success('Contact created successfully!');
+                handleCloseModal();
+
+                // REFRESH CONTACT LIST
+                await dispatch(fetchContactList()).unwrap();
+
+                // FETCH NEWLY CREATED CONTACT
+                await dispatch(
+                    fetchContact(createdContact.id)
+                ).unwrap();
+
+                //  navigate('/contact')
+
             } else {
                 const updatedValues = {
                     firstName: formData.firstName,
@@ -166,8 +186,8 @@ export default function ContactData() {
                 await dispatch(updateContactThunk({ contactId: modal.contactId!, values: updatedValues })).unwrap();
                 toast.success('Contact updated successfully!');
             }
-            dispatch(fetchContactList());
             handleCloseModal();
+            await dispatch(fetchContactList()).unwrap();
             if (modal.mode === 'create') navigate('/contact');
         } catch (error: any) {
             // toast.error(
@@ -194,28 +214,37 @@ export default function ContactData() {
 
     const handleDelete = async () => {
         if (!contact) return;
-        console.log('RAW contact.id:', JSON.stringify(contact.id));
+
+        if (contact.cases && contact.cases.length > 0) {
+            toast.error("Cannot delete contact because it has related cases.");
+            return;
+        }
+
         setIsDeleting(true);
+        setDeleteError(null);
         try {
-            console.log('delete started');
+            // Delete the contact
             await dispatch(deleteContactThunk(contact.id)).unwrap();
-            console.log('delete completed');
+            // Clear selected contact state
+            dispatch(clearContact());
+            // Refresh the contact list and get updated contacts
+            const updatedList = await dispatch(fetchContactList()).unwrap();
+            // If there are contacts left, select the first one
+            if (updatedList && updatedList.length > 0) {
+                await dispatch(fetchContact(updatedList[0].id));
+            }
+            // Show success toast
+            toast.success('Contact deleted successfully');
+            // Close the delete confirmation modal
             setIsDeleteDialogOpen(false);
-
-            // // refresh list
-            // const updatedList = await dispatch(fetchContactList()).unwrap();
-
-            // // select first remaining contact
-            // if (updatedList?.length > 0) {
-            //     dispatch(fetchContact(updatedList[0].id));
-            // }
-
-            // toast.success('Contact deleted successfully!');
-
-            dispatch(fetchContactList());
-            navigate('/contact');
-        } catch (error) {
-            toast.error(typeof error === 'string' ? error : 'Failed to delete contact. Please try again.');
+            // After deletion, stay on page; selected contact handled above
+        } catch (error: any) {
+            console.error("Delete error:", error);
+            setDeleteError(
+                typeof error === 'string'
+                    ? error
+                    : error?.message || 'Failed to delete contact.'
+            );
         } finally {
             setIsDeleting(false);
         }
@@ -340,7 +369,10 @@ export default function ContactData() {
                                     variant="destructive"
                                     size="sm"
                                     className="gap-2"
-                                    onClick={() => setIsDeleteDialogOpen(true)}
+                                    onClick={() => {
+                                        setDeleteError(null);
+                                        setIsDeleteDialogOpen(true);
+                                    }}
                                 >
                                     <Trash2 className="size-4" />
                                     Delete
@@ -604,7 +636,10 @@ export default function ContactData() {
             {isDeleteDialogOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn"
-                    onClick={() => setIsDeleteDialogOpen(false)}
+                    onClick={() => {
+                        setIsDeleteDialogOpen(false);
+                        setDeleteError(null);
+                    }}
                 >
                     <div
                         className="w-full max-w-md bg-white rounded-[20px] shadow-2xl overflow-hidden border border-gray-200 animate-scaleUp"
@@ -619,7 +654,10 @@ export default function ContactData() {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => setIsDeleteDialogOpen(false)}
+                                onClick={() => {
+                                    setIsDeleteDialogOpen(false);
+                                    setDeleteError(null);
+                                }}
                                 className="flex items-center justify-center bg-white/20 hover:bg-white/30 text-white w-10 h-10 rounded-xl transition-all duration-200"
                             >
                                 <X size={20} />
@@ -631,11 +669,26 @@ export default function ContactData() {
                                 <span className="font-bold text-gray-900">{contact?.name}</span>? This action cannot be
                                 undone and will permanently remove this contact.
                             </p>
+
+                            {deleteError && (
+                                <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 animate-fadeIn">
+                                    <div className="size-5 rounded-full bg-red-100 flex items-center justify-center text-red-600 shrink-0 mt-0.5 animate-pulse">
+                                        <X size={14} className="stroke-[3]" />
+                                    </div>
+                                    <div className="text-sm font-semibold text-red-700 flex-1">
+                                        {deleteError}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                                 <Button
                                     type="button"
                                     variant="ghost"
-                                    onClick={() => setIsDeleteDialogOpen(false)}
+                                    onClick={() => {
+                                        setIsDeleteDialogOpen(false);
+                                        setDeleteError(null);
+                                    }}
                                     disabled={isDeleting}
                                     className="px-5 bg-black/10"
                                 >

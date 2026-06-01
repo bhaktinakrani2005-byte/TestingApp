@@ -51,7 +51,7 @@ export default function AppLayout() {
 									to="/"
 									className="text-lg font-semibold text-gray-900 tracking-tight"
 								>
-									React Admin
+									React App
 								</Link>
 
 								{/* DESKTOP NAV */}

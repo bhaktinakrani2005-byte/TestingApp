@@ -264,12 +264,6 @@ export async function getAllContacts() {
     const result: any = await executeGraphQL(query);
 
     console.log("GRAPHQL RESULT", result);
-    // result?.uiapi?.query?.Contact?.edges?.map((edge: any) => ({
-    //   id: edge.node.Id,
-    //   name: edge.node.Name?.value,
-    //   email: edge.node.Email?.value,
-    //   title: edge.node.Title?.value,
-    // }))
 
     const data = result?.uiapi?.query?.Contact?.edges?.map((edge: any) => {
       return ({
@@ -360,15 +354,6 @@ export async function updateContact(
     // Since Name is a read-only compound field in Salesforce, we must update FirstName and LastName instead.
     const contactFields: Record<string, any> = {};
     console.log('values are', values);
-    // if (values.name) {
-    //   const parts = values.name.trim().split(/\s+/);
-    //   if (parts.length > 1) {
-    //     contactFields.FirstName = parts[0];
-    //     contactFields.LastName = parts.slice(1).join(' ');
-    //   } else {
-    //     contactFields.LastName = parts[0];
-    //   }
-    // }
     if (values.firstName) contactFields.FirstName = values.firstName;
     if (values.lastName) contactFields.LastName = values.lastName;
     if (values.email) contactFields.Email = values.email;
@@ -447,7 +432,7 @@ export async function deleteContact(contactId: string) {
     ) {
 
       throw new Error(
-        "Cannot delete contact because it has related cases."
+        "Cannot delete contact because it has related to cases."
       );
     }
 

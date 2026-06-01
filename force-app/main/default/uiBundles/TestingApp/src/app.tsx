@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import "./styles/global.css";
 import { Provider } from "react-redux"
 import { store } from "./store";
+import { Toaster } from "./components/ui/sonner";
 
 // Normalize basename: strip trailing slash so it matches URLs like /lwr/application/ai/c-app
 const rawBasePath = (globalThis as any).SFDC_ENV?.basePath;
@@ -15,6 +16,7 @@ createRoot(document.getElementById("root")!).render(
 	<StrictMode>
 		<Provider store={store}>
 			<RouterProvider router={router} />
+			<Toaster />
 		</Provider>
 	</StrictMode>,
 );

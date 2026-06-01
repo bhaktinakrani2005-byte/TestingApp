@@ -1,7 +1,6 @@
 import type { RouteObject } from 'react-router';
 import TodoListMainPage from './components/todo';
 import AuthAppLayout from "./features/authentication/layouts/AuthAppLayout";
-import ChartDataPage from './pages/ChartData';
 import ContactData from './pages/ContactData';
 import Home from './pages/Home';
 import NotFound from './pages/NotFound';
@@ -38,13 +37,6 @@ export const routes: RouteObject[] = [
           <TodoListMainPage />
         </ProtectedRoute>,
         handle: { showInNavigation: true, label: "Todo" }
-      },
-      {
-        path: 'chart',
-        element: <ProtectedRoute>
-          <ChartDataPage />
-        </ProtectedRoute>,
-        handle: { showInNavigation: true, label: "ChartData" }
       },
       {
         path: '*',
