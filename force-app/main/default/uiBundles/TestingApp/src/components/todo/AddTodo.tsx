@@ -55,10 +55,10 @@ export default function AddTodo() {
     };
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const handleEdit = (todo: any) => {
-        setTitle(todo.title);
-        setEditId(todo.id);
-    };
+    // const handleEdit = (todo: any) => {
+    //     setTitle(todo.title);
+    //     setEditId(todo.id);
+    // };
 
     const getTodos = () => {
         dispatch(fetchTodos(true));

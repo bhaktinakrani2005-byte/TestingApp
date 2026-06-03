@@ -1,6 +1,5 @@
 import AddTodo from './AddTodo'
 import TodoList from './TodoList'
-import UpdateTodo from './UpdateTodo'
 
 const TodoListMainPage = () => {
     return (

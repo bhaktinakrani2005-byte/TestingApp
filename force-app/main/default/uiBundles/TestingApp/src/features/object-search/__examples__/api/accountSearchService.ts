@@ -24,12 +24,10 @@ export type AccountSearchOptions = ObjectSearchOptions<
 export type { PicklistOption };
 
 export async function searchAccounts(
-	options: AccountSearchOptions = {},
 ): Promise<AccountSearchResult> {
 	return searchObjects<AccountSearchResult, SearchAccountsQuery, SearchAccountsQueryVariables>(
 		SEARCH_ACCOUNTS_QUERY,
-		"Account",
-		options,
+		"Account"
 	);
 }
 

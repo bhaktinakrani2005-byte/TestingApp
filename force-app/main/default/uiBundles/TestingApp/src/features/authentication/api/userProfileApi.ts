@@ -62,8 +62,9 @@ export async function fetchUserProfile<T>(
     fields: string = USER_PROFILE_FIELDS_FULL,
 ): Promise<T> {
     const data = await createDataSDK();
-    const response: any = await data.graphql?.(getUserProfileQuery(fields), {
-        userId,
+    const response: any = await data.graphql?.({
+        query: getUserProfileQuery(fields),
+        variables: { userId },
     });
     throwOnGraphQLErrors(response);
     return flattenGraphQLRecord<T>(response?.data?.uiapi?.query?.User?.edges?.[0]?.node);
@@ -87,8 +88,9 @@ export async function updateUserProfile<T>(
     values: Record<string, unknown>,
 ): Promise<T> {
     const data = await createDataSDK();
-    const response: any = await data.graphql?.(getUserProfileMutation(USER_PROFILE_FIELDS_FULL), {
-        input: { Id: userId, User: { ...values } },
+    const response: any = await data.graphql?.({
+        query: getUserProfileMutation(USER_PROFILE_FIELDS_FULL),
+        variables: { input: { Id: userId, User: { ...values } } },
     });
     throwOnGraphQLErrors(response);
     return flattenGraphQLRecord<T>(response?.data?.uiapi?.UserUpdate?.Record);

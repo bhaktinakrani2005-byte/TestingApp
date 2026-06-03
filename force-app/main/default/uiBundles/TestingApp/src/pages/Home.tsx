@@ -1,7 +1,7 @@
 import { useRedux } from '@/hook/useRedux';
 import { fetchContactList } from '@/store/slice/ContactSlice';
 // import { fetchContact } from '@/store/slice/ContactSlice';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export default function HomePage() {
 	const { dispatch } = useRedux();

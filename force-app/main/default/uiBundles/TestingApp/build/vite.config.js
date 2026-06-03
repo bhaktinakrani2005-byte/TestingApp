@@ -31,12 +31,23 @@ var schemaExists = existsSync(schemaPath);
 export default defineConfig(function (_a) {
     var mode = _a.mode;
     var env = loadEnv(mode, __dirname, '');
+    // const envDefinitions = Object.keys(env).reduce((acc, key) => {
+    //   acc[`process.env.${key}`] = JSON.stringify(env[key]);
+    //   return acc;
+    // }, {} as Record<string, string>);
     var envDefinitions = Object.keys(env).reduce(function (acc, key) {
-        acc["process.env.".concat(key)] = JSON.stringify(env[key]);
+        if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)) {
+            acc["process.env.".concat(key)] = JSON.stringify(env[key]);
+        }
+        else {
+            console.warn("Skipping invalid env key: ".concat(key));
+        }
         return acc;
     }, {});
     return {
-        define: __assign(__assign({}, envDefinitions), { 'process.env': JSON.stringify(env) }),
+        define: __assign({}, envDefinitions
+        // 'process.env': JSON.stringify(env)
+        ),
         base: './',
         plugins: __spreadArray([
             tailwindcss(),

@@ -12,16 +12,25 @@ const schemaExists = existsSync(schemaPath);
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '');
-  
+
+  // const envDefinitions = Object.keys(env).reduce((acc, key) => {
+  //   acc[`process.env.${key}`] = JSON.stringify(env[key]);
+  //   return acc;
+  // }, {} as Record<string, string>);
+
   const envDefinitions = Object.keys(env).reduce((acc, key) => {
-    acc[`process.env.${key}`] = JSON.stringify(env[key]);
+    if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)) {
+      acc[`process.env.${key}`] = JSON.stringify(env[key]);
+    } else {
+      console.warn(`Skipping invalid env key: ${key}`);
+    }
     return acc;
   }, {} as Record<string, string>);
 
   return {
     define: {
-      ...envDefinitions,
-      'process.env': JSON.stringify(env)
+      ...envDefinitions
+      // 'process.env': JSON.stringify(env)
     },
     base: './',
     plugins: [
@@ -32,14 +41,14 @@ export default defineConfig(({ mode }) => {
       // In CI or when schema is not checked in, skip codegen so build succeeds.
       ...(schemaExists
         ? [
-            codegen({
-              configFilePathOverride: resolve(__dirname, 'codegen.yml'),
-              runOnStart: true,
-              runOnBuild: true,
-              enableWatcher: true,
-              throwOnBuild: true,
-            }),
-          ]
+          codegen({
+            configFilePathOverride: resolve(__dirname, 'codegen.yml'),
+            runOnStart: true,
+            runOnBuild: true,
+            enableWatcher: true,
+            throwOnBuild: true,
+          }),
+        ]
         : []),
     ] as import('vite').PluginOption[],
 
