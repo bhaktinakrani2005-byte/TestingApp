@@ -9,6 +9,14 @@
         <name>ApexComponent</name>
     </types>
     <types>
+        <members>site/TestingApp</members>
+        <name>DigitalExperienceBundle</name>
+    </types>
+    <types>
+        <members>TestingApp</members>
+        <name>DigitalExperienceConfig</name>
+    </types>
+    <types>
         <members>*</members>
         <name>ApexPage</name>
     </types>
@@ -32,5 +40,9 @@
         <members>*</members>
         <name>StaticResource</name>
     </types>
-    <version>61.0</version>
+    <types>
+        <members>*</members>
+        <name>UIBundle</name>
+    </types>
+    <version>66.0</version>
 </Package>
