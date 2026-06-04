@@ -9,11 +9,11 @@
         <name>ApexComponent</name>
     </types>
     <types>
-        <members>site/TestingApp</members>
+        <members>site/TestingApp1</members>
         <name>DigitalExperienceBundle</name>
     </types>
     <types>
-        <members>TestingApp</members>
+        <members>TestingApp1</members>
         <name>DigitalExperienceConfig</name>
     </types>
     <types>
@@ -43,6 +43,18 @@
     <types>
         <members>*</members>
         <name>UIBundle</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>CustomSite</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Network</name>
+    </types>
+    <types>
+        <members>*</members>
+        <name>Settings</name>
     </types>
     <version>66.0</version>
 </Package>

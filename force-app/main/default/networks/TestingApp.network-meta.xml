@@ -45,7 +45,7 @@
         <selfRegProfilePageOverrideSetting>Designer</selfRegProfilePageOverrideSetting>
     </networkPageOverrides>
     <newSenderAddress>admin@company.com</newSenderAddress>
-    <picassoSite>TestingApp</picassoSite>
+    <picassoSite>TestingApp1</picassoSite>
     <selfRegistration>false</selfRegistration>
     <sendWelcomeEmail>true</sendWelcomeEmail>
     <site>TestingApp</site>
