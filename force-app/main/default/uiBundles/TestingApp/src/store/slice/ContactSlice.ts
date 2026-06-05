@@ -125,36 +125,36 @@ export interface newContactResponse {
 }
 
 
-export async function getCurrentUser(): Promise<CurrentUser> {
-    const response = await fetch('/services/data/v66.0/chatter/users/me');
-    if (!response.ok) {
-        throw new Error('Failed to fetch user');
-    }
-    return response.json();
-}
+// export async function getCurrentUser(): Promise<CurrentUser> {
+//     const response = await fetch('/services/oauth2/userinfo');
+//     if (!response.ok) {
+//         throw new Error('Failed to fetch user');
+//     }
+//     return response.json();
+// }
 
-export const fetchUser = createAsyncThunk<
-    CurrentUser,
-    void,
-    {
-        rejectValue: string;
-    }
->(
-    'contact/fetchUser',
-    async (_, { rejectWithValue }) => {
-        try {
-            const data = await getCurrentUser();
-            if (!data) {
-                return rejectWithValue("User not found");
-            }
-            return data;
-        }
-        catch (error) {
-            console.log(error);
-            return rejectWithValue("Failed to fetch user");
-        }
-    }
-)
+// export const fetchUser = createAsyncThunk<
+//     CurrentUser,
+//     void,
+//     {
+//         rejectValue: string;
+//     }
+// >(
+//     'contact/fetchUser',
+//     async (_, { rejectWithValue }) => {
+//         try {
+//             const data = await getCurrentUser();
+//             if (!data) {
+//                 return rejectWithValue("User not found");
+//             }
+//             return data;
+//         }
+//         catch (error) {
+//             console.log(error);
+//             return rejectWithValue("Failed to fetch user");
+//         }
+//     }
+// )
 
 
 
@@ -205,6 +205,7 @@ export const fetchContactList = createAsyncThunk<
                 return data;
             }
             catch (error) {
+                console.log(error);
                 return rejectWithValue("Failed to fetch user");
             }
         });
@@ -417,19 +418,19 @@ export const ContactSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload || "Failed to delete contact";
             })
-            .addCase(fetchUser.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(fetchUser.fulfilled, (state, action) => {
-                state.loading = false;
-                state.currentUser = action.payload;
-            })
-            .addCase(fetchUser.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || "Failed to get user";
-                toast.error(state.error);
-            })
+            // .addCase(fetchUser.pending, (state) => {
+            //     state.loading = true;
+            //     state.error = null;
+            // })
+            // .addCase(fetchUser.fulfilled, (state, action) => {
+            //     state.loading = false;
+            //     state.currentUser = action.payload;
+            // })
+            // .addCase(fetchUser.rejected, (state, action) => {
+            //     state.loading = false;
+            //     state.error = action.payload || "Failed to get user";
+            //     toast.error(state.error);
+            //})
             .addCase(createContactThunk.pending, (state) => {
                 state.loading = true;
                 state.error = null;

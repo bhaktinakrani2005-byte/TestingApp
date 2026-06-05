@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { useAuth } from "@/features/authentication/context/AuthContext";
-import { useRedux } from "@/hook/useRedux";
-import { fetchUser } from "@/store/slice/ContactSlice";
+// import { useRedux } from "@/hook/useRedux";
+//import { fetchUser } from "@/store/slice/ContactSlice";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
@@ -12,7 +12,7 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { dispatch } = useRedux();
+    //const { dispatch } = useRedux();
 
     const { isAuthenticated } = useAuth();
 
@@ -23,32 +23,30 @@ export default function LoginPage() {
         e.preventDefault();
 
         setLoading(true);
-
         setError(null);
-
         try {
-            const userData = await dispatch(fetchUser()).unwrap();
-
-            console.log("Authenticated User:", userData);
-
-            if (email !== userData.email) {
-
-                setError("Email does not match authenticated user");
-
-                return;
+            // Call Apex REST endpoint for login
+            const response = await fetch('/services/apexrest/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: email,
+                    password: password,
+                    startUrl: window.location.origin,
+                }),
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Login failed');
             }
-
-            /**
-             * REDIRECT AFTER SUCCESS
-             */
-            navigate("/home");
-
+            const data = await response.json();
+            console.log('Login successful', data);
+            // Redirect to home after successful login
+            navigate('/home');
         } catch (err) {
-            const message =
-                err instanceof Error
-                    ? err.message
-                    : "Login failed";
-
+            const message = err instanceof Error ? err.message : 'Login failed';
             setError(message);
         } finally {
             setLoading(false);
