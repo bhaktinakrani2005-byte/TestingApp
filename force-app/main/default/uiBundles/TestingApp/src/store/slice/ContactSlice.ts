@@ -46,7 +46,7 @@ export interface ContactListItem {
     title: string;
 }
 
-interface ContactState {
+export interface ContactState {
     contact: ContactDetails | null;
     contactList: {
         data: ContactListItem[],
@@ -56,10 +56,14 @@ interface ContactState {
     loading: boolean;
     error: string | null;
     currentUser: CurrentUser | null;
-    newContactInput: newContactInput
-    newContactResponse: newContactResponse
+    newContactInput: newContactInput;
+    newContactResponse: newContactResponse;
+    // passwordless login state
+    loginEmail?: string;
+    loginIdentifier?: string;
+    loginStep?: 'email' | 'code';
 }
-
+    
 const initialState: ContactState = {
     contact: {
         id: "",
@@ -106,6 +110,7 @@ export interface CurrentUser {
     username: string;
     firstName: string;
     lastName: string;
+    contactId?: string;
 }
 
 
@@ -125,36 +130,162 @@ export interface newContactResponse {
 }
 
 
-// export async function getCurrentUser(): Promise<CurrentUser> {
-//     const response = await fetch('/services/oauth2/userinfo');
-//     if (!response.ok) {
-//         throw new Error('Failed to fetch user');
-//     }
-//     return response.json();
-// }
+export interface LoginCredentials {
+    username: string;
+    password: string;
+    startUrl?: string;
+}
 
-// export const fetchUser = createAsyncThunk<
-//     CurrentUser,
-//     void,
-//     {
-//         rejectValue: string;
-//     }
-// >(
-//     'contact/fetchUser',
-//     async (_, { rejectWithValue }) => {
-//         try {
-//             const data = await getCurrentUser();
-//             if (!data) {
-//                 return rejectWithValue("User not found");
-//             }
-//             return data;
-//         }
-//         catch (error) {
-//             console.log(error);
-//             return rejectWithValue("Failed to fetch user");
-//         }
-//     }
-// )
+const getApiEndpoint = (): string => {
+  let base = (import.meta.env.VITE_SFDC_BASE_PATH as string) ||
+             (globalThis as any).SFDC_ENV?.basePath ||
+             (globalThis as any).SFDC_ENV?.instance || '';
+             
+  if (base) {
+    if (!base.endsWith('vforcesite') && !base.endsWith('vforcesite/')) {
+      if (base.endsWith('TestingApp')) {
+        base = base + 'vforcesite';
+      } else if (base.endsWith('TestingApp/')) {
+        base = base.replace('TestingApp/', 'TestingAppvforcesite');
+      }
+    }
+  } else {
+    base = '/TestingAppvforcesite';
+  }
+  
+  return `${base}/services/apexrest/uibundle/login`;
+};
+
+// Passwordless login: send OTP to email
+export const sendLoginCodeThunk = createAsyncThunk<
+    { identifier: string; startUrl?: string },
+    { email: string; startUrl?: string },
+    { rejectValue: string; state: RootState }
+>('contact/sendLoginCode', async ({ email, startUrl }, { rejectWithValue }) => {
+    try {
+        console.log('login code send');
+        const response = await fetch(getApiEndpoint(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'omit',
+            body: JSON.stringify({ email, startUrl })
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            return rejectWithValue(err.error || `Failed (${response.status})`);
+        }
+        console.log('login code responce is', response);
+        let data = await response.json();
+        if (typeof data === 'string') {
+            data = JSON.parse(data);
+        }
+        console.log('data is', data);
+        console.log('data is', data.identifier);
+        console.log('data is', data.startUrl);
+        return { identifier: data.identifier, startUrl: data.startUrl };
+    } catch (e: any) {
+        return rejectWithValue(e.message || 'Network error');
+    }
+});
+
+// Verify OTP code
+export const verifyLoginCodeThunk = createAsyncThunk<
+    { success: boolean; redirectUrl: string; user?: CurrentUser },
+    { email: string; identifier: string; code: string; startUrl?: string },
+    { rejectValue: string; state: RootState }
+>('contact/verifyLoginCode', async ({ email, identifier, code, startUrl }, { rejectWithValue }) => {
+    try {
+        console.log('otp is',code);
+        const response = await fetch(getApiEndpoint(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'omit',
+            body: JSON.stringify({ email, identifier, code, startUrl })
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            return rejectWithValue(err.error || `Failed (${response.status})`);
+        }
+        let data = await response.json();
+        if (typeof data === 'string') {
+            data = JSON.parse(data);
+        }
+        if (data.success) {
+            data.user = {
+                id: data.user?.id || '',
+                name: data.user?.name || email,
+                email: data.user?.email || email,
+                username: data.user?.username || email,
+                firstName: data.user?.firstName || '',
+                lastName: data.user?.lastName || '',
+                contactId: data.user?.contactId || ''
+            };
+        }
+        return data;
+    } catch (e: any) {
+        return rejectWithValue(e.message || 'Network error');
+    }
+});
+
+export const fetchUser = createAsyncThunk<
+    { success: boolean; redirectUrl: string; user?: CurrentUser },
+    LoginCredentials,
+    {
+        rejectValue: string;
+    }>(
+    'contact/fetchUser',
+    async (credentials, { rejectWithValue }) => {
+  try {
+    const apiEndpoint = getApiEndpoint();
+    console.log('Login API endpoint:', apiEndpoint);
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    const response = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers,
+      credentials: 'omit',
+      body: JSON.stringify({
+        username: credentials.username,
+        password: credentials.password,
+        startUrl: credentials.startUrl || '/home',
+      }),
+    });
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      const text = await response.text();
+      return rejectWithValue(`Unexpected response format: ${text.slice(0, 200)}`);
+    }
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      return rejectWithValue(errData.error || `Login failed (${response.status})`);
+    }
+    console.log('Login user username', credentials.username);
+
+    let data = await response.json(); 
+    if (typeof data === 'string') {
+      data = JSON.parse(data);
+    }
+    if (data.success) {
+      data.user = {
+        id: data.user?.id || '',
+        name: data.user?.name || credentials.username,
+        email: data.user?.email || '',
+        username: data.user?.username || credentials.username,
+        firstName: data.user?.firstName || '',
+        lastName: data.user?.lastName || '',
+        contactId: data.user?.contactId || ''
+      };
+    }
+    return data;
+  } catch (e: any) {
+    return rejectWithValue(e.message || 'Failed to login');
+  }
+});
 
 
 
@@ -348,6 +479,11 @@ export const ContactSlice = createSlice({
         clearContact: (state) => {
             state.contact = null;
         },
+        setCurrentUserContactId: (state, action) => {
+            if (state.currentUser) {
+                state.currentUser.contactId = action.payload;
+            }
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -418,19 +554,55 @@ export const ContactSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload || "Failed to delete contact";
             })
-            // .addCase(fetchUser.pending, (state) => {
-            //     state.loading = true;
-            //     state.error = null;
-            // })
-            // .addCase(fetchUser.fulfilled, (state, action) => {
-            //     state.loading = false;
-            //     state.currentUser = action.payload;
-            // })
-            // .addCase(fetchUser.rejected, (state, action) => {
-            //     state.loading = false;
-            //     state.error = action.payload || "Failed to get user";
-            //     toast.error(state.error);
-            //})
+            .addCase(fetchUser.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(fetchUser.fulfilled, (state, action) => {
+                state.loading = false;
+                // Store the authenticated user if we have it
+                if (action.payload.success && action.payload.user) {
+                    state.currentUser = action.payload.user as any;
+                }
+                // Keep redirect URL for navigation
+                (state as any).redirectUrl = action.payload.redirectUrl;
+            })
+            .addCase(fetchUser.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to login";
+                toast.error(state.error);
+            })
+            // sendLoginCodeThunk
+            .addCase(sendLoginCodeThunk.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(sendLoginCodeThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                state.loginIdentifier = action.payload.identifier;
+            })
+            .addCase(sendLoginCodeThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to send code";
+                toast.error(state.error);
+            })
+            // verifyLoginCodeThunk
+            .addCase(verifyLoginCodeThunk.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(verifyLoginCodeThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                if (action.payload.success && action.payload.user) {
+                    state.currentUser = action.payload.user as any;
+                }
+                (state as any).redirectUrl = action.payload.redirectUrl;
+            })
+            .addCase(verifyLoginCodeThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.error = action.payload || "Failed to verify code";
+                toast.error(state.error);
+            })
             .addCase(createContactThunk.pending, (state) => {
                 state.loading = true;
                 state.error = null;
@@ -486,5 +658,5 @@ export const ContactSlice = createSlice({
     }
 });
 
-export const { logoutContact, clearContact } = ContactSlice.actions;
+export const { logoutContact, clearContact, setCurrentUserContactId } = ContactSlice.actions;
 export default ContactSlice.reducer;

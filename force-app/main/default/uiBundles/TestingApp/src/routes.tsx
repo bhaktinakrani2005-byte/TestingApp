@@ -32,6 +32,13 @@ export const routes: RouteObject[] = [
         handle: { showInNavigation: true, label: "Contact" }
       },
       {
+        path: 'profile',
+        element: <ProtectedRoute>
+          <ContactData />
+        </ProtectedRoute>,
+        handle: { showInNavigation: false, label: "Profile" }
+      },
+      {
         path: 'todo',
         element: <ProtectedRoute>
           <TodoListMainPage />

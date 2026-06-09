@@ -26,6 +26,10 @@
     </types>
     <types>
         <members>*</members>
+        <name>PermissionSet</name>
+    </types>
+    <types>
+        <members>*</members>
         <name>Settings</name>
     </types>
     <version>66.0</version>

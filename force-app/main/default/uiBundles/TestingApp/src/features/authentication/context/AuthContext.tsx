@@ -56,11 +56,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 			localStorage.removeItem("persist:root");
 
-			// const finalLogoutUrl = startURL
-			// 	? `${API_ROUTES.LOGOUT}?startURL=${encodeURIComponent(startURL)}`
-			// 	: API_ROUTES.LOGOUT;
-
-			window.location.replace('/');
+			// [Dev Note] Properly terminate the Salesforce session by navigating to the logout URL.
+			// This ensures session cookies are cleared on the server side.
+			window.location.replace('/secur/logout.jsp?retUrl=/');
 
 		},
 		[dispatch]
