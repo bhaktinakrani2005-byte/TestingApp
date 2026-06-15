@@ -1,2 +1,18 @@
-<apex:page showHeader="false" title="Communities Login">
+<apex:page showHeader="false" sidebar="false" standardStylesheets="false" title="Communities Login">
+    <apex:includeLightning />
+    
+    <div id="lightning" style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: #f9fafb;" />
+    
+    <script>
+        $Lightning.use("c:TestingAppLoginApp", function() {
+            $Lightning.createComponent(
+                "c:passwordless-login-form",
+                {},
+                "lightning",
+                function(cmp) {
+                    console.log("LWC component loaded successfully");
+                }
+            );
+        });
+    </script>
 </apex:page>

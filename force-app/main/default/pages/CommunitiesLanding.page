@@ -1,3 +1,6 @@
 <apex:page showHeader="false" title="Communities Landing">
-    <!-- Placeholder for Communities Landing -->
+    <script>
+        // Redirect to the React App home page
+        window.location.replace('/TestingApp/home');
+    </script>
 </apex:page>

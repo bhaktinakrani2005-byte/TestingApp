@@ -1,4 +1,4 @@
-import { CircleUser, LogIn, LogOut, UserPen, UserPlus } from "lucide-react";
+import { CircleUser, LogIn, LogOut, UserPlus } from "lucide-react";
 import { Link } from "react-router";
 import { useAuth } from "../context/AuthContext";
 import { ROUTES } from "../authenticationConfig";
@@ -63,8 +63,8 @@ export function AuthMenu({ trigger, guestContent, menuItems, className }: AuthMe
 						<DropdownMenuSeparator />
 						<DropdownMenuItem asChild>
 							<Link to={ROUTES.PROFILE.PATH}>
-								<UserPen className="size-4" />
-								Edit Profile
+								<CircleUser className="size-4" />
+								My Profile
 							</Link>
 						</DropdownMenuItem>
 						{menuItems}

@@ -13,10 +13,13 @@ const schemaExists = existsSync(schemaPath);
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, __dirname, '');
 
-  // const envDefinitions = Object.keys(env).reduce((acc, key) => {
-  //   acc[`process.env.${key}`] = JSON.stringify(env[key]);
-  //   return acc;
-  // }, {} as Record<string, string>);
+  const proxyHeadersCleaner = (proxyReq: import('http').ClientRequest) => {
+    proxyReq.removeHeader('cookie');
+    proxyReq.removeHeader('authorization');
+    proxyReq.removeHeader('x-sfdc-session');
+    proxyReq.removeHeader('origin');
+    proxyReq.removeHeader('referer');
+  };
 
   const envDefinitions = Object.keys(env).reduce((acc, key) => {
     if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)) {
@@ -54,26 +57,39 @@ export default defineConfig(({ mode }) => {
 
     server: {
       proxy: {
-        '/TestingAppvforcesite/services': {
+        '/TestingAppvforcesitefor_st': {
           target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
           changeOrigin: true,
           secure: false,
-          onProxyReq: (proxyReq: import('http').ClientRequest) => {
-            proxyReq.removeHeader('cookie');
-            proxyReq.removeHeader('authorization');
-            proxyReq.removeHeader('x-sfdc-session');
-          },
+          onProxyReq: proxyHeadersCleaner,
+          rewrite: (path) => path.replace(/^\/TestingAppvforcesitefor_st/, '/TestingAppvforcesite/for_st'),
+        },
+        '/TestingAppvforcesitewebruntime': {
+          target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
+          changeOrigin: true,
+          secure: false,
+          onProxyReq: proxyHeadersCleaner,
+          rewrite: (path) => path.replace(/^\/TestingAppvforcesitewebruntime/, '/TestingAppvforcesite/webruntime'),
+        },
+        '/TestingAppvforcesite': {
+          target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
+          changeOrigin: true,
+          secure: false,
+          onProxyReq: proxyHeadersCleaner,
+          rewrite: (path) => path,
+        },
+        '/TestingApp/services': {
+          target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
+          changeOrigin: true,
+          secure: false,
+          onProxyReq: proxyHeadersCleaner,
           rewrite: (path) => path,
         },
         '/services': {
           target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
           changeOrigin: true,
           secure: false,
-          onProxyReq: (proxyReq: import('http').ClientRequest) => {
-            proxyReq.removeHeader('cookie');
-            proxyReq.removeHeader('authorization');
-            proxyReq.removeHeader('x-sfdc-session');
-          },
+          onProxyReq: proxyHeadersCleaner,
           rewrite: (path) => path,
         },
       },

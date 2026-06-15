@@ -110,7 +110,6 @@ export interface CurrentUser {
     username: string;
     firstName: string;
     lastName: string;
-    contactId?: string;
 }
 
 
@@ -142,15 +141,12 @@ const getApiEndpoint = (): string => {
              (globalThis as any).SFDC_ENV?.instance || '';
              
   if (base) {
-    if (!base.endsWith('vforcesite') && !base.endsWith('vforcesite/')) {
-      if (base.endsWith('TestingApp')) {
-        base = base + 'vforcesite';
-      } else if (base.endsWith('TestingApp/')) {
-        base = base.replace('TestingApp/', 'TestingAppvforcesite');
-      }
+    if (!base.startsWith('/')) {
+      base = '/' + base;
     }
+    base = base.replace(/\/+$/, '');
   } else {
-    base = '/TestingAppvforcesite';
+    base = '/TestingApp';
   }
   
   return `${base}/services/apexrest/uibundle/login`;
@@ -167,21 +163,17 @@ export const sendLoginCodeThunk = createAsyncThunk<
         const response = await fetch(getApiEndpoint(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'omit',
+            credentials: 'include',
             body: JSON.stringify({ email, startUrl })
         });
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             return rejectWithValue(err.error || `Failed (${response.status})`);
         }
-        console.log('login code responce is', response);
         let data = await response.json();
         if (typeof data === 'string') {
             data = JSON.parse(data);
         }
-        console.log('data is', data);
-        console.log('data is', data.identifier);
-        console.log('data is', data.startUrl);
         return { identifier: data.identifier, startUrl: data.startUrl };
     } catch (e: any) {
         return rejectWithValue(e.message || 'Network error');
@@ -199,7 +191,7 @@ export const verifyLoginCodeThunk = createAsyncThunk<
         const response = await fetch(getApiEndpoint(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            credentials: 'omit',
+            credentials: 'include',
             body: JSON.stringify({ email, identifier, code, startUrl })
         });
         if (!response.ok) {
@@ -217,9 +209,34 @@ export const verifyLoginCodeThunk = createAsyncThunk<
                 email: data.user?.email || email,
                 username: data.user?.username || email,
                 firstName: data.user?.firstName || '',
-                lastName: data.user?.lastName || '',
-                contactId: data.user?.contactId || ''
+                lastName: data.user?.lastName || ''
             };
+            console.log('user come from apex is',data.user);
+        }
+        return data;
+    } catch (e: any) {
+        return rejectWithValue(e.message || 'Network error');
+    }
+});
+
+// Check if user session is already active (e.g. logged in via LWC)
+export const checkSessionThunk = createAsyncThunk<
+    { authenticated: boolean; user?: CurrentUser },
+    void,
+    { rejectValue: string; state: RootState }
+>('contact/checkSession', async (_, { rejectWithValue }) => {
+    try {
+        const response = await fetch(getApiEndpoint(), {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include'
+        });
+        if (!response.ok) {
+            return { authenticated: false };
+        }
+        let data = await response.json();
+        if (typeof data === 'string') {
+            data = JSON.parse(data);
         }
         return data;
     } catch (e: any) {
@@ -277,8 +294,7 @@ export const fetchUser = createAsyncThunk<
         email: data.user?.email || '',
         username: data.user?.username || credentials.username,
         firstName: data.user?.firstName || '',
-        lastName: data.user?.lastName || '',
-        contactId: data.user?.contactId || ''
+        lastName: data.user?.lastName || ''
       };
     }
     return data;
@@ -479,11 +495,6 @@ export const ContactSlice = createSlice({
         clearContact: (state) => {
             state.contact = null;
         },
-        setCurrentUserContactId: (state, action) => {
-            if (state.currentUser) {
-                state.currentUser.contactId = action.payload;
-            }
-        },
     },
     extraReducers: (builder) => {
         builder
@@ -593,6 +604,7 @@ export const ContactSlice = createSlice({
             })
             .addCase(verifyLoginCodeThunk.fulfilled, (state, action) => {
                 state.loading = false;
+                 console.log('LOGIN SUCCESS', action.payload.user);
                 if (action.payload.success && action.payload.user) {
                     state.currentUser = action.payload.user as any;
                 }
@@ -602,6 +614,23 @@ export const ContactSlice = createSlice({
                 state.loading = false;
                 state.error = action.payload || "Failed to verify code";
                 toast.error(state.error);
+            })
+            // checkSessionThunk
+            .addCase(checkSessionThunk.pending, (state) => {
+                state.loading = true;
+                state.error = null;
+            })
+            .addCase(checkSessionThunk.fulfilled, (state, action) => {
+                state.loading = false;
+                if (action.payload.authenticated && action.payload.user) {
+                    state.currentUser = action.payload.user as any;
+                } else {
+                    state.currentUser = null;
+                }
+            })
+            .addCase(checkSessionThunk.rejected, (state, action) => {
+                state.loading = false;
+                state.currentUser = null;
             })
             .addCase(createContactThunk.pending, (state) => {
                 state.loading = true;
@@ -658,5 +687,5 @@ export const ContactSlice = createSlice({
     }
 });
 
-export const { logoutContact, clearContact, setCurrentUserContactId } = ContactSlice.actions;
+export const { logoutContact, clearContact } = ContactSlice.actions;
 export default ContactSlice.reducer;

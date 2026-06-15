@@ -1,6 +1,36 @@
 @RestResource(urlMapping='/uibundle/login')
 global without sharing class LoginController {
 
+    @HttpGet
+    global static String handleGet() {
+        RestContext.response.addHeader('Content-Type', 'application/json');
+        Id currentUserId = UserInfo.getUserId();
+        
+        if (UserInfo.getUserType() == 'Guest') {
+            RestContext.response.statusCode = 401;
+            return JSON.serialize(new Map<String,Object>{'authenticated' => false});
+        }
+        
+        List<User> users = [SELECT Id, FirstName, Email, LastName, Username FROM User WHERE Id = :currentUserId AND IsActive = true LIMIT 1];
+        if (users.isEmpty()) {
+            RestContext.response.statusCode = 404;
+            return JSON.serialize(new Map<String,Object>{'error' => 'User not found'});
+        }
+        
+        RestContext.response.statusCode = 200;
+        return JSON.serialize(new Map<String,Object>{
+            'authenticated' => true,
+            'user' => new Map<String,Object>{
+                'id' => users[0].Id,
+                'name' => users[0].FirstName + ' ' + users[0].LastName,
+                'email' => users[0].Email,
+                'username' => users[0].Username,
+                'firstName' => users[0].FirstName,
+                'lastName' => users[0].LastName
+            }
+        });
+    }
+
     @HttpPost
     global static String handlePost() {
         RestContext.response.addHeader('Content-Type', 'application/json');
@@ -55,19 +85,15 @@ global without sharing class LoginController {
             }
             
             String identifier;
-            if (Network.getNetworkId() == null) {
-                System.debug('No Network context found. Falling back to mock mode.');
+            try {
+                identifier = UserManagement.initPasswordlessLogin(
+                    u.Id,
+                    Auth.VerificationMethod.EMAIL
+                );
+                System.debug('Passwordless login initiated, identifier=' + identifier);
+            } catch (Exception ex) {
+                System.debug('Passwordless login init failed, falling back to mock mode: ' + ex.getMessage());
                 identifier = 'MOCK-' + u.Id;
-            } else {
-                try {
-                    identifier = UserManagement.initPasswordlessLogin(
-                        u.Id,
-                        Auth.VerificationMethod.EMAIL
-                    );
-                } catch (Exception ex) {
-                    System.debug('Passwordless login init failed, falling back to mock mode: ' + ex.getMessage());
-                    identifier = 'MOCK-' + u.Id;
-                }
             }
             
             RestContext.response.statusCode = 200;
@@ -90,7 +116,7 @@ global without sharing class LoginController {
         }
         
         try {
-            List<User> users = [SELECT Id, FirstName, Email, LastName, Username, ContactId FROM User WHERE Email = :email AND IsActive = true ORDER BY ContactId DESC NULLS LAST LIMIT 1];
+            List<User> users = [SELECT Id, FirstName,Email, LastName, Username FROM User WHERE Email = :email AND IsActive = true ORDER BY ContactId DESC NULLS LAST LIMIT 1];
             if (users.isEmpty()) {
                 RestContext.response.statusCode = 404;
                 return JSON.serialize(new Map<String,Object>{'error'=>'User not found'});
@@ -99,23 +125,31 @@ global without sharing class LoginController {
             Boolean verified = false;
             String redirectUrl = startUrl;
             
-            if (identifier.startsWith('MOCK-')) {
+            if (identifier != null && identifier.startsWith('MOCK-')) {
                 if (code.trim() == '123456') {
                     verified = true;
-                    redirectUrl = '/home';
+                    redirectUrl = startUrl;
                 }
             } else {
-                Auth.VerificationResult vr = UserManagement.verifyPasswordlessLogin(
-                    users[0].Id,
-                    Auth.VerificationMethod.EMAIL,
-                    identifier,
-                    code.trim(),
-                    startUrl
-                );
-                
-                if (vr != null && vr.success) {
-                    verified = true;
-                    redirectUrl = '/home';
+                try {
+                    Auth.VerificationResult vr = UserManagement.verifyPasswordlessLogin(
+                        users[0].Id,
+                        Auth.VerificationMethod.EMAIL,
+                        identifier,
+                        code.trim(),
+                        startUrl
+                    );
+                    
+                    if (vr != null && vr.success) {
+                        verified = true;
+                        if (vr.redirect != null) {
+                            redirectUrl = vr.redirect.getUrl();
+                        } else {
+                            redirectUrl = '/home';
+                        }
+                    }
+                } catch (Exception ex) {
+                    verified = false;
                 }
             }
             
@@ -132,8 +166,7 @@ global without sharing class LoginController {
                 'email' => email,
                 'username' => users[0].Username,
                 'firstName' => users[0].FirstName,
-                'lastName' => users[0].LastName,
-                'contactId' => users[0].ContactId
+                'lastName' => users[0].LastName
             };
             
             return JSON.serialize(new Map<String,Object>{
@@ -147,3 +180,4 @@ global without sharing class LoginController {
         }
     }
 }
+

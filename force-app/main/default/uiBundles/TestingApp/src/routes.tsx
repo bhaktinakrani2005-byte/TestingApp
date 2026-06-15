@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import NotFound from './pages/NotFound';
 import LoginPage from './pages/Login';
 import ProtectedRoute from './pages/ProtectedRoute';
+import ProfilePage from './pages/Profile';
 
 export const routes: RouteObject[] = [
   {
@@ -32,18 +33,18 @@ export const routes: RouteObject[] = [
         handle: { showInNavigation: true, label: "Contact" }
       },
       {
-        path: 'profile',
-        element: <ProtectedRoute>
-          <ContactData />
-        </ProtectedRoute>,
-        handle: { showInNavigation: false, label: "Profile" }
-      },
-      {
         path: 'todo',
         element: <ProtectedRoute>
           <TodoListMainPage />
         </ProtectedRoute>,
         handle: { showInNavigation: true, label: "Todo" }
+      },
+      {
+        path: 'profile',
+        element: <ProtectedRoute>
+          <ProfilePage />
+        </ProtectedRoute>,
+        handle: { showInNavigation: false, label: "Profile" }
       },
       {
         path: '*',

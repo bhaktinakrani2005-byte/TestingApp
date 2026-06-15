@@ -64,6 +64,47 @@ export default defineConfig(function (_a) {
                 }),
             ]
             : []), true),
+        server: {
+            proxy: {
+                '/TestingAppvforcesite/services': {
+                    target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
+                    changeOrigin: true,
+                    secure: false,
+                    onProxyReq: function (proxyReq) {
+                        proxyReq.removeHeader('cookie');
+                        proxyReq.removeHeader('authorization');
+                        proxyReq.removeHeader('x-sfdc-session');
+                    },
+                    rewrite: function (path) { return path; },
+                },
+                '/services': {
+                    target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
+                    changeOrigin: true,
+                    secure: false,
+                    onProxyReq: function (proxyReq) {
+                        proxyReq.removeHeader('cookie');
+                        proxyReq.removeHeader('authorization');
+                        proxyReq.removeHeader('x-sfdc-session');
+                    },
+                    rewrite: function (path) { return path; },
+                },
+            },
+        },
+        //   proxy: {
+        //     '/services': {
+        //       target: 'https://momentum-fun-8796-dev-ed.scratch.my.site.com/TestingApp',
+        //       changeOrigin: true,
+        //       secure: false,
+        //       onProxyReq: (proxyReq: import('http').ClientRequest) => {
+        //         proxyReq.removeHeader('cookie');
+        //         proxyReq.removeHeader('authorization');
+        //         proxyReq.removeHeader('x-sfdc-session');
+        //       },
+        //       // Ensure the path is exactly what the site context expects
+        //       rewrite: (path) => path.replace(/^\/services/, '/services'),
+        //     },
+        //   },
+        // },
         // Build configuration for MPA
         build: {
             outDir: resolve(__dirname, 'dist'),

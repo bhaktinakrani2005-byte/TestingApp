@@ -1,5 +1,5 @@
-import { createContext, useContext, useCallback, type ReactNode } from "react";
-import { logoutContact } from "@/store/slice/ContactSlice";
+import { createContext, useContext, useCallback, useEffect, type ReactNode } from "react";
+import { logoutContact, checkSessionThunk } from "@/store/slice/ContactSlice";
 // import { API_ROUTES } from "../authenticationConfig";
 import { useRedux } from "@/hook/useRedux";
 
@@ -30,6 +30,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	const user = selector(
 		(state) => state.contact.currentUser
 	);
+
+	useEffect(() => {
+		if (!user) {
+			dispatch(checkSessionThunk());
+		}
+	}, [dispatch, user]);
+
+	console.log('currentUser', user);
+	console.log('isAuthenticated', user !== null);
 
 	const loading = selector(
 		(state) => state.contact.loading

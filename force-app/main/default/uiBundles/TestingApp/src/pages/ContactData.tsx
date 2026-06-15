@@ -14,13 +14,11 @@ import {
     fetchContact,
     fetchContactList,
     createContactThunk,
-    clearContact,
-    setCurrentUserContactId
+    clearContact
 } from '../store/slice/ContactSlice';
 import { useRedux } from '@/hook/useRedux';
 import SidebarLoader from '@/components/ui/SidebarLoader';
 import ContactDetailSkeleton from '../components/contacts/ContactDetailSkeleton';
-import { fetchUserContact } from '@/features/authentication/api/userProfileApi';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,7 +81,7 @@ function validateAll(data: FormData): Record<string, string> {
 export default function ContactData() {
     const navigate = useNavigate();
     const { dispatch, selector } = useRedux();
-    const { contactList, contact, currentUser } = selector((state) => state.contact);
+    const { contactList, contact } = selector((state) => state.contact);
     const isLoading = contactList.isLoading;
     const contactData: any[] = Array.isArray(contactList) ? contactList : contactList?.data ?? [];
 
@@ -100,44 +98,12 @@ export default function ContactData() {
 
     const [search, setSearch] = useState('');
 
-    // Load contact data: logged-in user contact if portal user, otherwise first contact in list
+    // Auto-select first contact
     useEffect(() => {
-        if (currentUser) {
-            const targetContactId = currentUser.contactId;
-            if (targetContactId) {
-                if (!contact || contact.id !== targetContactId) {
-                    dispatch(fetchContact(targetContactId));
-                }
-            } else {
-                // Fetch contactId dynamically from Salesforce via GraphQL fetchUserContact
-                fetchUserContact<{ ContactId?: string | { value?: string } }>(currentUser.id)
-                    .then((res) => {
-                        const cid = typeof res?.ContactId === 'object' ? res?.ContactId?.value : res?.ContactId;
-                        if (cid) {
-                            dispatch(setCurrentUserContactId(cid));
-                            dispatch(fetchContact(cid));
-                        } else {
-                            // No contact associated (e.g. admin), fallback to list select
-                            if (contactData.length > 0 && (!contact || !contact.id)) {
-                                dispatch(fetchContact([...contactData].reverse()[0].id));
-                            }
-                        }
-                    })
-                    .catch((err) => {
-                        console.error('Failed to retrieve user ContactId:', err);
-                        // Fallback to list select
-                        if (contactData.length > 0 && (!contact || !contact.id)) {
-                            dispatch(fetchContact([...contactData].reverse()[0].id));
-                        }
-                    });
-            }
-        } else {
-            // Fallback (e.g. unauthenticated or mock mode)
-            if (contactData.length > 0 && (!contact || !contact.id)) {
-                dispatch(fetchContact([...contactData].reverse()[0].id));
-            }
+        if (contactData.length > 0 && (!contact || !contact.id)) {
+            dispatch(fetchContact([...contactData].reverse()[0].id));
         }
-    }, [currentUser, contactData, contact, dispatch]);
+    }, [contactData, contact, dispatch]);
 
     // ── Modal helpers ──────────────────────────────────────────────────────────
 
@@ -221,13 +187,7 @@ export default function ContactData() {
                 toast.success('Contact updated successfully!');
             }
             handleCloseModal();
-            if (currentUser?.contactId) {
-                // Refresh specific contact for portal user
-                await dispatch(fetchContact(currentUser.contactId)).unwrap();
-            } else {
-                // Refresh list for admins
-                await dispatch(fetchContactList()).unwrap();
-            }
+            await dispatch(fetchContactList()).unwrap();
             if (modal.mode === 'create') navigate('/contact');
         } catch (error: any) {
             // toast.error(
@@ -313,88 +273,86 @@ export default function ContactData() {
             `}</style>
 
             {/* ── SIDEBAR ── */}
-            {!currentUser?.contactId && (
-                <aside className="w-80 bg-white border-r border-gray-200 p-4 hidden md:flex flex-col">
-                    <div className="mb-5">
-                        <div className="flex items-center gap-2">
-                            <Input
-                                placeholder="Search contacts..."
-                                className="h-10"
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                            />
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="shrink-0"
-                                disabled={isLoading}
-                                onClick={() => dispatch(fetchContactList())}
-                            >
-                                <RefreshCcw className="size-4" />
-                            </Button>
-                            <Button type="button" onClick={() => handleOpenModal('create')}>
-                                New
-                            </Button>
-                        </div>
+            <aside className="w-80 bg-white border-r border-gray-200 p-4 hidden md:flex flex-col">
+                <div className="mb-5">
+                    <div className="flex items-center gap-2">
+                        <Input
+                            placeholder="Search contacts..."
+                            className="h-10"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                        />
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="shrink-0"
+                            disabled={isLoading}
+                            onClick={() => dispatch(fetchContactList())}
+                        >
+                            <RefreshCcw className="size-4" />
+                        </Button>
+                        <Button type="button" onClick={() => handleOpenModal('create')}>
+                            New
+                        </Button>
                     </div>
+                </div>
 
-                    <div className="flex items-center justify-between mb-3">
-                        <h2 className="text-sm font-semibold text-gray-700">Contacts: {contactData.length}</h2>
-                    </div>
+                <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-sm font-semibold text-gray-700">Contacts: {contactData.length}</h2>
+                </div>
 
-                    {isLoading ? (
-                        <SidebarLoader />
-                    ) : (
-                        <div className="flex-1 overflow-y-auto space-y-3 pr-1">
-                            {[...filteredContacts].reverse().map((cItem) => {
-                                const isSelected = contact?.id === cItem.id;
-                                return (
-                                    <div
-                                        key={cItem.id}
-                                        onClick={() => dispatch(fetchContact(cItem.id))}
-                                        className={`flex items-center justify-between border rounded-xl px-3 py-2 transition cursor-pointer ${isSelected
-                                            ? 'bg-blue-50 border-blue-400 shadow-sm ring-1 ring-blue-200'
-                                            : 'bg-white border-gray-200 hover:bg-gray-50'
-                                            }`}
-                                    >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <div
-                                                className={`size-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${isSelected
-                                                    ? 'bg-blue-600 text-white shadow-sm'
-                                                    : 'bg-blue-100 text-blue-700'
-                                                    }`}
-                                            >
-                                                {cItem.name?.charAt(0) || 'C'}
-                                            </div>
-                                            <div className="min-w-0">
-                                                <h3
-                                                    className={`text-sm font-medium truncate ${isSelected ? 'text-blue-900 font-bold' : 'text-gray-800'
-                                                        }`}
-                                                >
-                                                    {cItem.name}
-                                                </h3>
-                                                <p
-                                                    className={`text-xs ${isSelected ? 'text-blue-700/80' : 'text-gray-500'
-                                                        }`}
-                                                >
-                                                    {cItem.email || 'No Email'}
-                                                </p>
-                                            </div>
-                                        </div>
+                {isLoading ? (
+                    <SidebarLoader />
+                ) : (
+                    <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+                        {[...filteredContacts].reverse().map((cItem) => {
+                            const isSelected = contact?.id === cItem.id;
+                            return (
+                                <div
+                                    key={cItem.id}
+                                    onClick={() => dispatch(fetchContact(cItem.id))}
+                                    className={`flex items-center justify-between border rounded-xl px-3 py-2 transition cursor-pointer ${isSelected
+                                        ? 'bg-blue-50 border-blue-400 shadow-sm ring-1 ring-blue-200'
+                                        : 'bg-white border-gray-200 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-2 min-w-0">
                                         <div
-                                            className={`text-[11px] shrink-0 ml-2 ${isSelected ? 'text-blue-700/80 font-medium' : 'text-gray-400'
+                                            className={`size-9 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${isSelected
+                                                ? 'bg-blue-600 text-white shadow-sm'
+                                                : 'bg-blue-100 text-blue-700'
                                                 }`}
                                         >
-                                            {cItem.title || 'No Title'}
+                                            {cItem.name?.charAt(0) || 'C'}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3
+                                                className={`text-sm font-medium truncate ${isSelected ? 'text-blue-900 font-bold' : 'text-gray-800'
+                                                    }`}
+                                            >
+                                                {cItem.name}
+                                            </h3>
+                                            <p
+                                                className={`text-xs ${isSelected ? 'text-blue-700/80' : 'text-gray-500'
+                                                    }`}
+                                            >
+                                                {cItem.email || 'No Email'}
+                                            </p>
                                         </div>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </aside>
-            )}
+                                    <div
+                                        className={`text-[11px] shrink-0 ml-2 ${isSelected ? 'text-blue-700/80 font-medium' : 'text-gray-400'
+                                            }`}
+                                    >
+                                        {cItem.title || 'No Title'}
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </aside>
 
             {/* ── MAIN CONTENT ── */}
             {contact?.isLoading ? (
@@ -407,20 +365,18 @@ export default function ContactData() {
                         </h1>
                         {contact?.id && (
                             <div className="flex items-center gap-2">
-                                {!currentUser?.contactId && (
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        className="gap-2"
-                                        onClick={() => {
-                                            setDeleteError(null);
-                                            setIsDeleteDialogOpen(true);
-                                        }}
-                                    >
-                                        <Trash2 className="size-4" />
-                                        Delete
-                                    </Button>
-                                )}
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={() => {
+                                        setDeleteError(null);
+                                        setIsDeleteDialogOpen(true);
+                                    }}
+                                >
+                                    <Trash2 className="size-4" />
+                                    Delete
+                                </Button>
                                 <Button
                                     variant="outline"
                                     size="sm"
