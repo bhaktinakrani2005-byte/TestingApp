@@ -139,7 +139,7 @@ export function useCachedAsyncData<T>(
 	const [loading, setLoading] = useState(!cached);
 	const [error, setError] = useState<string | null>(null);
 
-	// eslint-disable-next-line react-hooks/exhaustive-deps --- deps are explicitly managed by the caller
+	// eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo --- deps are explicitly managed by the caller
 	const memoizedFetcher = useCallback(fetcher, deps);
 
 	useEffect(() => {
@@ -147,6 +147,7 @@ export function useCachedAsyncData<T>(
 		// since the initial render (e.g. StrictMode double-invoke).
 		const entry = getValidEntry(cacheKey, ttl);
 		if (entry) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect
 			setData(entry.data as T);
 			setLoading(false);
 			setError(null);

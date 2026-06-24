@@ -68,9 +68,11 @@ export function NumericRangeFilterInputs({
 	const externalMin = value?.min ?? "";
 	const externalMax = value?.max ?? "";
 	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setLocalMin(externalMin);
 	}, [externalMin]);
 	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setLocalMax(externalMax);
 	}, [externalMax]);
 

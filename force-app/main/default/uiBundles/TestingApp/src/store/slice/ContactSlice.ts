@@ -10,6 +10,8 @@ import {
     createContact
 } from "@/api/contacts/contactService";
 import { RootState } from "..";
+import { getDynamicBasePath } from "@/lib/utils";
+import { executeGraphQL } from "@/api/graphqlClient";
 
 export interface Case {
     id: string;
@@ -58,10 +60,6 @@ export interface ContactState {
     currentUser: CurrentUser | null;
     newContactInput: newContactInput;
     newContactResponse: newContactResponse;
-    // passwordless login state
-    loginEmail?: string;
-    loginIdentifier?: string;
-    loginStep?: 'email' | 'code';
 }
     
 const initialState: ContactState = {
@@ -135,9 +133,10 @@ export interface LoginCredentials {
     startUrl?: string;
 }
 
-const getApiEndpoint = (): string => {
-  let base = (import.meta.env.VITE_SFDC_BASE_PATH as string) ||
-             (globalThis as any).SFDC_ENV?.basePath ||
+// getApiEndpoint is deprecated and unused since session is now checked via GraphQL
+
+const getAuthApiEndpoint = (): string => {
+  let base = getDynamicBasePath() ||
              (globalThis as any).SFDC_ENV?.instance || '';
              
   if (base) {
@@ -146,101 +145,70 @@ const getApiEndpoint = (): string => {
     }
     base = base.replace(/\/+$/, '');
   } else {
-    base = '/TestingApp';
+    base = '/TestingAppvforcesite';
   }
   
-  return `${base}/services/apexrest/uibundle/login`;
+  return `${base}/services/apexrest/auth/login`;
 };
 
-// Passwordless login: send OTP to email
-export const sendLoginCodeThunk = createAsyncThunk<
-    { identifier: string; startUrl?: string },
-    { email: string; startUrl?: string },
-    { rejectValue: string; state: RootState }
->('contact/sendLoginCode', async ({ email, startUrl }, { rejectWithValue }) => {
-    try {
-        console.log('login code send');
-        const response = await fetch(getApiEndpoint(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ email, startUrl })
-        });
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            return rejectWithValue(err.error || `Failed (${response.status})`);
-        }
-        let data = await response.json();
-        if (typeof data === 'string') {
-            data = JSON.parse(data);
-        }
-        return { identifier: data.identifier, startUrl: data.startUrl };
-    } catch (e: any) {
-        return rejectWithValue(e.message || 'Network error');
-    }
-});
-
-// Verify OTP code
-export const verifyLoginCodeThunk = createAsyncThunk<
-    { success: boolean; redirectUrl: string; user?: CurrentUser },
-    { email: string; identifier: string; code: string; startUrl?: string },
-    { rejectValue: string; state: RootState }
->('contact/verifyLoginCode', async ({ email, identifier, code, startUrl }, { rejectWithValue }) => {
-    try {
-        console.log('otp is',code);
-        const response = await fetch(getApiEndpoint(), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ email, identifier, code, startUrl })
-        });
-        if (!response.ok) {
-            const err = await response.json().catch(() => ({}));
-            return rejectWithValue(err.error || `Failed (${response.status})`);
-        }
-        let data = await response.json();
-        if (typeof data === 'string') {
-            data = JSON.parse(data);
-        }
-        if (data.success) {
-            data.user = {
-                id: data.user?.id || '',
-                name: data.user?.name || email,
-                email: data.user?.email || email,
-                username: data.user?.username || email,
-                firstName: data.user?.firstName || '',
-                lastName: data.user?.lastName || ''
-            };
-            console.log('user come from apex is',data.user);
-        }
-        return data;
-    } catch (e: any) {
-        return rejectWithValue(e.message || 'Network error');
-    }
-});
 
 // Check if user session is already active (e.g. logged in via LWC)
 export const checkSessionThunk = createAsyncThunk<
     { authenticated: boolean; user?: CurrentUser },
     void,
     { rejectValue: string; state: RootState }
->('contact/checkSession', async (_, { rejectWithValue }) => {
+>('contact/checkSession', async () => {
     try {
-        const response = await fetch(getApiEndpoint(), {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include'
-        });
-        if (!response.ok) {
+        const query = `
+          query GetCurrentUser {
+            uiapi {
+              query {
+                User(first: 1) {
+                  edges {
+                    node {
+                      Id
+                      Name { value }
+                      FirstName { value }
+                      LastName { value }
+                      Email { value }
+                      Username { value }
+                      UserType { value }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `;
+        const data = await executeGraphQL<any>(query);
+        const node = data?.uiapi?.query?.User?.edges?.[0]?.node;
+
+        if (!node) {
             return { authenticated: false };
         }
-        let data = await response.json();
-        if (typeof data === 'string') {
-            data = JSON.parse(data);
+
+        const name = node.Name?.value || '';
+        const username = node.Username?.value || '';
+        const userType = node.UserType?.value || '';
+
+        // If the user is a Guest user, or name/username contains "guest", it's the site guest user.
+        if (userType === 'Guest' || name.toLowerCase().includes('guest') || username.toLowerCase().includes('guest')) {
+            return { authenticated: false };
         }
-        return data;
+
+        const user: CurrentUser = {
+            id: node.Id,
+            name: name,
+            email: node.Email?.value || '',
+            username: username,
+            firstName: node.FirstName?.value || '',
+            lastName: node.LastName?.value || ''
+        };
+
+        return { authenticated: true, user };
     } catch (e: any) {
-        return rejectWithValue(e.message || 'Network error');
+        console.error('Session check failed:', e);
+        return { authenticated: false };
     }
 });
 
@@ -253,7 +221,7 @@ export const fetchUser = createAsyncThunk<
     'contact/fetchUser',
     async (credentials, { rejectWithValue }) => {
   try {
-    const apiEndpoint = getApiEndpoint();
+    const apiEndpoint = getAuthApiEndpoint();
     console.log('Login API endpoint:', apiEndpoint);
 
     const headers: Record<string, string> = {
@@ -265,9 +233,9 @@ export const fetchUser = createAsyncThunk<
       headers,
       credentials: 'omit',
       body: JSON.stringify({
-        username: credentials.username,
+        email: credentials.username,
         password: credentials.password,
-        startUrl: credentials.startUrl || '/home',
+        startUrl: credentials.startUrl || '/TestingApp/home',
       }),
     });
 
@@ -279,7 +247,8 @@ export const fetchUser = createAsyncThunk<
 
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
-      return rejectWithValue(errData.error || `Login failed (${response.status})`);
+      const errMsg = (errData.errors && errData.errors.length) ? errData.errors[0] : (errData.error || `Login failed (${response.status})`);
+      return rejectWithValue(errMsg);
     }
     console.log('Login user username', credentials.username);
 
@@ -299,6 +268,7 @@ export const fetchUser = createAsyncThunk<
     }
     return data;
   } catch (e: any) {
+    console.log('error is',e.message);
     return rejectWithValue(e.message || 'Failed to login');
   }
 });
@@ -583,38 +553,7 @@ export const ContactSlice = createSlice({
                 state.error = action.payload || "Failed to login";
                 toast.error(state.error);
             })
-            // sendLoginCodeThunk
-            .addCase(sendLoginCodeThunk.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(sendLoginCodeThunk.fulfilled, (state, action) => {
-                state.loading = false;
-                state.loginIdentifier = action.payload.identifier;
-            })
-            .addCase(sendLoginCodeThunk.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || "Failed to send code";
-                toast.error(state.error);
-            })
-            // verifyLoginCodeThunk
-            .addCase(verifyLoginCodeThunk.pending, (state) => {
-                state.loading = true;
-                state.error = null;
-            })
-            .addCase(verifyLoginCodeThunk.fulfilled, (state, action) => {
-                state.loading = false;
-                 console.log('LOGIN SUCCESS', action.payload.user);
-                if (action.payload.success && action.payload.user) {
-                    state.currentUser = action.payload.user as any;
-                }
-                (state as any).redirectUrl = action.payload.redirectUrl;
-            })
-            .addCase(verifyLoginCodeThunk.rejected, (state, action) => {
-                state.loading = false;
-                state.error = action.payload || "Failed to verify code";
-                toast.error(state.error);
-            })
+
             // checkSessionThunk
             .addCase(checkSessionThunk.pending, (state) => {
                 state.loading = true;
@@ -628,7 +567,7 @@ export const ContactSlice = createSlice({
                     state.currentUser = null;
                 }
             })
-            .addCase(checkSessionThunk.rejected, (state, action) => {
+            .addCase(checkSessionThunk.rejected, (state) => {
                 state.loading = false;
                 state.currentUser = null;
             })

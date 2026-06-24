@@ -1,4 +1,5 @@
 import { createDataSDK } from "@salesforce/sdk-data";
+import { getDynamicBasePath } from "@/lib/utils";
 
 export interface ObjectSearchOptions<TWhere, TOrderBy> {
 	where?: TWhere;
@@ -19,7 +20,12 @@ export async function searchObjects<TResult, TQuery, TVariables>(
 ): Promise<TResult> {
 	//const { where, orderBy, first = 20, after } = options;
 
-	const data = await createDataSDK();
+	const basePath = getDynamicBasePath();
+	const data = await createDataSDK({
+		webapp: {
+			basePath: basePath || undefined
+		}
+	});
 	const response = await data.graphql?.<TQuery, TVariables>({ query });
 	// 	first,
 	// 	after,
@@ -54,7 +60,12 @@ export async function fetchDistinctValues<TQuery>(
 	objectName: string,
 	fieldName: string,
 ): Promise<PicklistOption[]> {
-	const data = await createDataSDK();
+	const basePath = getDynamicBasePath();
+	const data = await createDataSDK({
+		webapp: {
+			basePath: basePath || undefined
+		}
+	});
 	const response = await data.graphql?.<TQuery>({ query });
 	const errors = response?.errors;
 

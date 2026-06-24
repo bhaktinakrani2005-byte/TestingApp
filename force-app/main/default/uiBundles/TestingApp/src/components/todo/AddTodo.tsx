@@ -54,7 +54,6 @@ export default function AddTodo() {
         setTitle('');
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     // const handleEdit = (todo: any) => {
     //     setTitle(todo.title);
     //     setEditId(todo.id);

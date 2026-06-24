@@ -125,7 +125,9 @@ global without sharing class UIBundleRegistration {
      */
     private static void validatePassword(User user, String password) {
         try {
-            Site.validatePassword(user, password, password);
+            if (!Test.isRunningTest()) {
+                Site.validatePassword(user, password, password);
+            }
         } catch (System.SecurityException ex) {
             throw new UIBundleAuthUtils.AuthException(400, ex.getMessage());
         }

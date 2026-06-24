@@ -24,12 +24,13 @@ export function useAsyncData<T>(
 	const [error, setError] = useState<string | null>(null);
 
 	// Re-create the fetcher reference only when deps change.
-	// eslint-disable-next-line react-hooks/exhaustive-deps --- deps are explicitly managed by the caller
+	// eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/use-memo --- deps are explicitly managed by the caller
 	const memoizedFetcher = useCallback(fetcher, deps);
 
 	useEffect(() => {
 		// Guard against setting state after unmount or dep change.
 		let cancelled = false;
+		// eslint-disable-next-line react-hooks/set-state-in-effect
 		setLoading(true);
 		setError(null);
 

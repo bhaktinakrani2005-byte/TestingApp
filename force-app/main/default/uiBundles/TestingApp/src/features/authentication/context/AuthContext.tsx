@@ -32,10 +32,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	);
 
 	useEffect(() => {
-		if (!user) {
-			dispatch(checkSessionThunk());
-		}
-	}, [dispatch, user]);
+		dispatch(checkSessionThunk());
+	}, [dispatch]);
 
 	console.log('currentUser', user);
 	console.log('isAuthenticated', user !== null);

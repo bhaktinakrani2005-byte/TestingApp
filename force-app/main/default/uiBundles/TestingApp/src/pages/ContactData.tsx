@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/card';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/table';
@@ -76,14 +76,14 @@ function validateAll(data: FormData): Record<string, string> {
     return errors;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
-
 export default function ContactData() {
     const navigate = useNavigate();
     const { dispatch, selector } = useRedux();
     const { contactList, contact } = selector((state) => state.contact);
     const isLoading = contactList.isLoading;
-    const contactData: any[] = Array.isArray(contactList) ? contactList : contactList?.data ?? [];
+    const contactData = useMemo(() => {
+        return Array.isArray(contactList) ? contactList : contactList?.data ?? [];
+    }, [contactList]);
 
     // Unified modal state
     const [modal, setModal] = useState<ModalState>({ open: false, mode: 'create', contactId: null });

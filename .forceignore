@@ -12,4 +12,43 @@ package.xml
 **/__tests__/**
 
 node_modules/
+**/node_modules/**
+**/node_modules/
+**/e2e/**
+**/playwright-report/**
+**/test-results/**
 .DS_Store
+# Allow CORS configurations to be deployed
+# force-app/main/default/corsWhitelistOrigins/
+
+# Ignore UIBundle source and configuration files explicitly
+force-app/main/default/uiBundles/TestingApp/src/
+force-app/main/default/uiBundles/TestingApp/node_modules/
+force-app/main/default/uiBundles/TestingApp/e2e/
+force-app/main/default/uiBundles/TestingApp/playwright-report/
+force-app/main/default/uiBundles/TestingApp/test-results/
+force-app/main/default/uiBundles/TestingApp/build/
+force-app/main/default/uiBundles/TestingApp/scripts/
+force-app/main/default/uiBundles/TestingApp/vite.config.ts
+force-app/main/default/uiBundles/TestingApp/vitest.config.ts
+force-app/main/default/uiBundles/TestingApp/vitest.setup.ts
+force-app/main/default/uiBundles/TestingApp/tsconfig.json
+force-app/main/default/uiBundles/TestingApp/tsconfig.node.json
+force-app/main/default/uiBundles/TestingApp/tsconfig.tsbuildinfo
+force-app/main/default/uiBundles/TestingApp/README.md
+force-app/main/default/uiBundles/TestingApp/CHANGELOG.md
+force-app/main/default/uiBundles/TestingApp/.env
+force-app/main/default/uiBundles/TestingApp/.forceignore
+force-app/main/default/uiBundles/TestingApp/.graphqlrc.yml
+force-app/main/default/uiBundles/TestingApp/.prettierignore
+force-app/main/default/uiBundles/TestingApp/.prettierrc
+force-app/main/default/uiBundles/TestingApp/codegen.yml
+force-app/main/default/uiBundles/TestingApp/components.json
+force-app/main/default/uiBundles/TestingApp/playwright.config.ts
+force-app/main/default/uiBundles/TestingApp/vite-env.d.ts
+force-app/main/default/uiBundles/TestingApp/vitest-env.d.ts
+force-app/main/default/uiBundles/TestingApp/index.html
+
+# Ignore TempBundle entirely to avoid metadata deployment errors since it has no build output
+force-app/main/default/uiBundles/TempBundle/
+!**/uiBundles/TestingApp/dist/**

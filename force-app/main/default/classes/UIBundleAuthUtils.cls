@@ -28,30 +28,39 @@ public without sharing class UIBundleAuthUtils {
      * @return Sanitized URL or defaultUrl if invalid.
      */
     public static String getSanitizedStartUrl(String url, String defaultUrl) {
-        if (String.isBlank(url) || url.equals('/')) { return defaultUrl; }
+        String safeDefault = defaultUrl == null ? '' : defaultUrl;
+        if (String.isBlank(url) || url.equals('/')) { return safeDefault; }
         
         String decoded; // Decode URL to catch encoded bypasses (%2f%2f -> //)
         try {
             decoded = EncodingUtil.urlDecode(url, 'UTF-8');
         } catch (Exception e) {
-            return defaultUrl;
+            return safeDefault;
         }
         
         // Must start with / but not // (protocol-relative)
-        if (!decoded.startsWith('/') || decoded.startsWith('//')) { return defaultUrl; }
+        if (!decoded.startsWith('/') || decoded.startsWith('//')) { return safeDefault; }
         // Reject backslashes (some browsers treat \ as /)
-        if (decoded.contains('\\')) { return defaultUrl; }
+        if (decoded.contains('\\')) { return safeDefault; }
         // Reject @ which can indicate user info in URL (//user@evil.com)
-        if (decoded.contains('@')) { return defaultUrl; }
+        if (decoded.contains('@')) { return safeDefault; }
         // Reject : which could indicate protocol or port manipulation
-        if (decoded.contains(':')) { return defaultUrl; }
+        if (decoded.contains(':')) { return safeDefault; }
         // Reject control characters (ASCII < 32) and DEL (127)
         for (Integer i = 0; i < decoded.length(); i++) {
             Integer charCode = decoded.charAt(i);
-            if (charCode < 32 || charCode == 127) { return defaultUrl; }
+            if (charCode < 32 || charCode == 127) { return safeDefault; }
         }
         
-        return defaultUrl + url;
+        // If the URL already contains the path prefix (or starts with the LWR prefix), return it directly
+        if (decoded.startsWith(safeDefault)) {
+            return url;
+        }
+        if (decoded.startsWith('/TestingApp')) {
+            return url;
+        }
+        
+        return safeDefault + url;
     }
 
     /**

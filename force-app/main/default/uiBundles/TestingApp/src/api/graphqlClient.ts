@@ -3,12 +3,18 @@
  * Use with gql-tagged queries and generated operation types for type-safe calls.
  */
 import { createDataSDK } from '@salesforce/sdk-data';
+import { getDynamicBasePath } from '@/lib/utils';
 
 export async function executeGraphQL<
   TData,
   TVariables extends Record<string, unknown> | undefined = undefined,
 >(query: string, variables?: TVariables): Promise<TData> {
-  const data = await createDataSDK();
+  const basePath = getDynamicBasePath();
+  const data = await createDataSDK({
+    webapp: {
+      basePath: basePath || undefined
+    }
+  });
   // SDK types graphql() first param as string; at runtime it may accept gql DocumentNode too
   const response = await data.graphql?.<TData>({
     query,

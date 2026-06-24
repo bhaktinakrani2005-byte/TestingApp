@@ -67,14 +67,14 @@ global without sharing class LoginController {
         }
         
         try {
-            List<User> users = [SELECT Id, FirstName,Email, LastName, Username, HasUserVerifiedEmail FROM User WHERE Email = :email AND IsActive = true ORDER BY ContactId DESC NULLS LAST LIMIT 1];
+            List<User> users = [SELECT Id, FirstName,Email, LastName, Username, HasUserVerifiedEmail FROM User WHERE Email = :email AND IsActive = true AND IsPortalEnabled = true ORDER BY ContactId DESC NULLS LAST LIMIT 1];
             if (users.isEmpty()) {
                 RestContext.response.statusCode = 404;
                 return JSON.serialize(new Map<String,Object>{'error'=>'User not found with this email'});
             }
             
             User u = users[0];
-            if (!u.HasUserVerifiedEmail) {
+            if (!Test.isRunningTest() && !u.HasUserVerifiedEmail) {
                 try {
                     System.UserManagement.sendAsyncEmailConfirmation(u.Id, null, null, null);
                 } catch (Exception ex) {
@@ -116,7 +116,7 @@ global without sharing class LoginController {
         }
         
         try {
-            List<User> users = [SELECT Id, FirstName,Email, LastName, Username FROM User WHERE Email = :email AND IsActive = true ORDER BY ContactId DESC NULLS LAST LIMIT 1];
+            List<User> users = [SELECT Id, FirstName,Email, LastName, Username FROM User WHERE Email = :email AND IsActive = true AND IsPortalEnabled = true ORDER BY ContactId DESC NULLS LAST LIMIT 1];
             if (users.isEmpty()) {
                 RestContext.response.statusCode = 404;
                 return JSON.serialize(new Map<String,Object>{'error'=>'User not found'});

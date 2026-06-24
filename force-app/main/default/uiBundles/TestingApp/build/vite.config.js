@@ -31,10 +31,13 @@ var schemaExists = existsSync(schemaPath);
 export default defineConfig(function (_a) {
     var mode = _a.mode;
     var env = loadEnv(mode, __dirname, '');
-    // const envDefinitions = Object.keys(env).reduce((acc, key) => {
-    //   acc[`process.env.${key}`] = JSON.stringify(env[key]);
-    //   return acc;
-    // }, {} as Record<string, string>);
+    var proxyHeadersCleaner = function (proxyReq) {
+        proxyReq.removeHeader('cookie');
+        proxyReq.removeHeader('authorization');
+        proxyReq.removeHeader('x-sfdc-session');
+        proxyReq.removeHeader('origin');
+        proxyReq.removeHeader('referer');
+    };
     var envDefinitions = Object.keys(env).reduce(function (acc, key) {
         if (/^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)) {
             acc["process.env.".concat(key)] = JSON.stringify(env[key]);
@@ -66,26 +69,39 @@ export default defineConfig(function (_a) {
             : []), true),
         server: {
             proxy: {
-                '/TestingAppvforcesite/services': {
+                '/TestingAppvforcesitefor_st': {
                     target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
                     changeOrigin: true,
                     secure: false,
-                    onProxyReq: function (proxyReq) {
-                        proxyReq.removeHeader('cookie');
-                        proxyReq.removeHeader('authorization');
-                        proxyReq.removeHeader('x-sfdc-session');
-                    },
+                    onProxyReq: proxyHeadersCleaner,
+                    rewrite: function (path) { return path.replace(/^\/TestingAppvforcesitefor_st/, '/TestingAppvforcesite/for_st'); },
+                },
+                '/TestingAppvforcesitewebruntime': {
+                    target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
+                    changeOrigin: true,
+                    secure: false,
+                    onProxyReq: proxyHeadersCleaner,
+                    rewrite: function (path) { return path.replace(/^\/TestingAppvforcesitewebruntime/, '/TestingAppvforcesite/webruntime'); },
+                },
+                '/TestingAppvforcesite': {
+                    target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
+                    changeOrigin: true,
+                    secure: false,
+                    onProxyReq: proxyHeadersCleaner,
+                    rewrite: function (path) { return path; },
+                },
+                '/TestingApp/services': {
+                    target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
+                    changeOrigin: true,
+                    secure: false,
+                    onProxyReq: proxyHeadersCleaner,
                     rewrite: function (path) { return path; },
                 },
                 '/services': {
                     target: env.VITE_SFDC_INSTANCE || 'https://momentum-fun-8796-dev-ed.scratch.my.site.com',
                     changeOrigin: true,
                     secure: false,
-                    onProxyReq: function (proxyReq) {
-                        proxyReq.removeHeader('cookie');
-                        proxyReq.removeHeader('authorization');
-                        proxyReq.removeHeader('x-sfdc-session');
-                    },
+                    onProxyReq: proxyHeadersCleaner,
                     rewrite: function (path) { return path; },
                 },
             },

@@ -3,6 +3,7 @@
  */
 import { createDataSDK } from "@salesforce/sdk-data";
 import { flattenGraphQLRecord } from "../utils/helpers";
+import { getDynamicBasePath } from "@/lib/utils";
 
 const USER_PROFILE_FIELDS_FULL = `
     Id
@@ -61,7 +62,12 @@ export async function fetchUserProfile<T>(
     userId: string,
     fields: string = USER_PROFILE_FIELDS_FULL,
 ): Promise<T> {
-    const data = await createDataSDK();
+    const basePath = getDynamicBasePath();
+    const data = await createDataSDK({
+        webapp: {
+            basePath: basePath || undefined
+        }
+    });
     const response: any = await data.graphql?.({
         query: getUserProfileQuery(fields),
         variables: { userId },
@@ -87,7 +93,12 @@ export async function updateUserProfile<T>(
     userId: string,
     values: Record<string, unknown>,
 ): Promise<T> {
-    const data = await createDataSDK();
+    const basePath = getDynamicBasePath();
+    const data = await createDataSDK({
+        webapp: {
+            basePath: basePath || undefined
+        }
+    });
     const response: any = await data.graphql?.({
         query: getUserProfileMutation(USER_PROFILE_FIELDS_FULL),
         variables: { input: { Id: userId, User: { ...values } } },

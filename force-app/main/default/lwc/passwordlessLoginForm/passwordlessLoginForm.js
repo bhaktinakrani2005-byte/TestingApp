@@ -46,9 +46,18 @@ export default class PasswordlessLoginForm extends LightningElement {
         try {
             const result = await verifyOtp({ email: this.email, identifier: this.identifier, code: this.code, startUrl: this.startUrl });
             if (result.success) {
-                this.dispatchEvent(new ShowToastEvent({ title: 'Success', message: 'Login verified.', variant: 'success' }));
-                // Redirect to the start URL
-                window.location.href = result.redirectUrl;
+                 const loginEvent = new CustomEvent('loginsuccess', {
+                    detail: { result },
+                    bubbles: true,
+                    composed: true,
+                    cancelable: true
+                });
+                this.dispatchEvent(loginEvent);
+                
+                if (!loginEvent.defaultPrevented) {
+                    // Redirect to the start URL
+                    window.location.href = result.redirectUrl;
+                }
             } else {
                 this.errorMessage = 'Invalid code.';
                 this.dispatchEvent(new ShowToastEvent({ title: 'Error', message: this.errorMessage, variant: 'error' }));
