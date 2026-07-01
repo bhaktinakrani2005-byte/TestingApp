@@ -1,117 +1,91 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "@/features/authentication/context/AuthContext";
 import { Navigate } from "react-router";
-import { getDynamicBasePath, getDynamicInstanceUrl } from "@/lib/utils";
+import { useRedux } from "@/hook/useRedux";
+import { fetchUser } from "@/store/slice/ContactSlice";
+import { getDynamicInstanceUrl, getDynamicBasePath } from "@/lib/utils";
 
 export default function LoginPage() {
   const { isAuthenticated } = useAuth();
-  const [loading, setLoading] = useState(true);
+  const { dispatch } = useRedux();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const instanceUrl = getDynamicInstanceUrl();
-    const sitePrefix = getDynamicBasePath();
-    const scriptSrc = `${instanceUrl}${sitePrefix}/lightning/lightning.out.js`;
-
-    // Function to initialize the application elements
-    const initLightningOut = () => {
-      try {
-        const cardContainer = document.getElementById("login-form-container");
-        if (!cardContainer) return;
-
-        // Clear container content first
-        cardContainer.innerHTML = "";
-
-        const lightningEndPoint = `${instanceUrl}${sitePrefix}`;
-
-        (window as any).$Lightning.use(
-          "c:TestingAppLoginApp",
-          () => {
-            (window as any).$Lightning.createComponent(
-              "c:passwordlessLoginForm",
-              {},
-              "login-form-container",
-              () => {
-                console.log("Passwordless login form component created successfully");
-                setLoading(false);
-              }
-            );
-          },
-          lightningEndPoint
-        );
-      } catch (err: any) {
-        console.error("Lightning Out init error:", err);
-        setError("Failed to initialize login form component: " + err.message);
-        setLoading(false);
-      }
-    };
-
-    // Load the Lightning Out library dynamically
-    const existingScript = document.querySelector(`script[src="${scriptSrc}"]`) as HTMLScriptElement;
-    if (existingScript) {
-      if ((window as any).__lightningOutScriptLoaded) {
-        initLightningOut();
-      } else {
-        const handleLoad = () => {
-          (window as any).__lightningOutScriptLoaded = true;
-          initLightningOut();
-        };
-        existingScript.addEventListener("load", handleLoad);
-        // We cast to any to avoid TypeScript complaints on onerror in older type libs
-        existingScript.addEventListener("error", () => {
-          setError("Failed to load Salesforce Lightning Out library.");
-          setLoading(false);
-        });
-      }
-    } else {
-      const script = document.createElement("script");
-      script.src = scriptSrc;
-      script.async = true;
-      script.onload = () => {
-        (window as any).__lightningOutScriptLoaded = true;
-        initLightningOut();
-      };
-      script.onerror = () => {
-        setError(
-          "Failed to load Salesforce Lightning Out library. Please verify your network connection and Salesforce instance settings."
-        );
-        setLoading(false);
-      };
-      document.body.appendChild(script);
-    }
-
-    // listen for the LWC's "loginsuccess" custom event
-    function handleLoginSuccess(e: Event) {
-      e.preventDefault(); // Stop LWC from performing relative redirect
-      const customEvent = e as CustomEvent<{ result: { success: boolean; redirectUrl?: string } }>;
-      console.log("Login success event:", customEvent.detail);
-      const { result } = customEvent.detail;
-
-      if (result?.success && result.redirectUrl) {
-        const fullRedirectUrl = result.redirectUrl.startsWith("http")
-          ? result.redirectUrl
-          : `${instanceUrl}${result.redirectUrl}`;
-        window.location.href = fullRedirectUrl;
-      } else {
-        setError("Login verification failed. Please try again.");
-      }
-    }
-
-    document.addEventListener("loginsuccess", handleLoginSuccess as EventListener);
-
-    return () => {
-      document.removeEventListener("loginsuccess", handleLoginSuccess as EventListener);
-      
-      const cardContainer = document.getElementById("login-form-container");
-      if (cardContainer) {
-        cardContainer.innerHTML = "";
-      }
-    };
-  }, []);
 
   if (isAuthenticated) {
     return <Navigate to="/home" replace />;
   }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!username.trim() || !password.trim()) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+    try {
+      const resultAction = await dispatch(
+        fetchUser({
+          username: username.trim(),
+          password: password.trim(),
+          startUrl: `${getDynamicBasePath()}/home`,
+        })
+      );
+      if (fetchUser.fulfilled.match(resultAction)) {
+        const payload = resultAction.payload;
+        if (payload && payload.success && payload.redirectUrl) {
+          const isLocalhost = typeof window !== 'undefined' && 
+            (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+          
+          let fullRedirectUrl = payload.redirectUrl;
+          if (isLocalhost) {
+            if (fullRedirectUrl.startsWith("http")) {
+              try {
+                const urlObj = new URL(fullRedirectUrl);
+                let targetPath = urlObj.pathname + urlObj.search + urlObj.hash;
+                const dynamicBasePath = getDynamicBasePath();
+                if (dynamicBasePath && targetPath.startsWith(dynamicBasePath)) {
+                  targetPath = targetPath.substring(dynamicBasePath.length);
+                }
+                if (targetPath.startsWith('/TestingApp')) {
+                  targetPath = targetPath.substring('/TestingApp'.length);
+                }
+                fullRedirectUrl = `${window.location.origin}${targetPath.startsWith('/') ? targetPath : '/' + targetPath}`;
+              } catch (e) {
+                console.error('Failed to parse redirect URL:', e);
+              }
+            } else {
+              let targetPath = payload.redirectUrl;
+              const dynamicBasePath = getDynamicBasePath();
+              if (dynamicBasePath && targetPath.startsWith(dynamicBasePath)) {
+                targetPath = targetPath.substring(dynamicBasePath.length);
+              }
+              if (targetPath.startsWith('/TestingApp')) {
+                targetPath = targetPath.substring('/TestingApp'.length);
+              }
+              fullRedirectUrl = `${window.location.origin}${targetPath.startsWith('/') ? targetPath : '/' + targetPath}`;
+            }
+          } else {
+            if (!fullRedirectUrl.startsWith("http")) {
+              const instanceUrl = getDynamicInstanceUrl();
+              fullRedirectUrl = `${instanceUrl}${payload.redirectUrl}`;
+            }
+          }
+          window.location.href = fullRedirectUrl;
+        } else {
+          setError("Invalid username or password.");
+        }
+      } else {
+        setError((resultAction.payload as string) || "Login failed");
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred during login");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -122,12 +96,12 @@ export default function LoginPage() {
               Community Login
             </h1>
             <p className="text-slate-500 mt-2 text-sm">
-              Please sign in using your email OTP
+              Please sign in using your Salesforce credentials
             </p>
           </div>
 
           {error && (
-            <div className="bg-rose-50 text-rose-600 border border-rose-100 text-sm p-4 rounded-xl mb-6 flex items-start space-x-2 animate-pulse">
+            <div className="bg-rose-50 text-rose-600 border border-rose-100 text-sm p-4 rounded-xl mb-6 flex items-start space-x-2">
               <svg
                 className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-500"
                 fill="none"
@@ -145,23 +119,72 @@ export default function LoginPage() {
             </div>
           )}
 
-          {loading && (
-            <div className="flex flex-col items-center justify-center py-12 space-y-4">
-              <svg className="animate-spin h-10 w-10 text-blue-600" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              <p className="text-sm font-semibold text-slate-500 animate-pulse">
-                Initializing secure login client...
-              </p>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label
+                htmlFor="username"
+                className="block text-sm font-semibold text-slate-600 mb-1"
+              >
+                Username or Email
+              </label>
+              <input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-slate-800 disabled:opacity-50"
+                placeholder="username@example.com"
+                required
+              />
             </div>
-          )}
-
-          <div id="login-form-container" />
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-semibold text-slate-600 mb-1"
+              >
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-slate-800 disabled:opacity-50"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-xl transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex items-center justify-center space-x-2"
+            >
+              {loading && (
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              )}
+              <span>{loading ? "Signing in..." : "Sign In"}</span>
+            </button>
+          </form>
         </div>
       </div>
     </div>

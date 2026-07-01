@@ -63,6 +63,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 			localStorage.removeItem("persist:root");
 
+			if (typeof window !== 'undefined' && typeof window.caches !== 'undefined') {
+				try {
+					window.caches.delete('@salesforce/sdk-data_v1');
+				} catch (e) {
+					console.error('Failed to clear CSRF cache on logout:', e);
+				}
+			}
+
 			// [Dev Note] Properly terminate the Salesforce session by navigating to the logout URL.
 			// This ensures session cookies are cleared on the server side.
 			window.location.replace('/secur/logout.jsp?retUrl=/');

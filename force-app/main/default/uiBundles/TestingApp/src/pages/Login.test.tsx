@@ -28,7 +28,7 @@ describe('LoginPage integration tests', () => {
         store.dispatch(logoutContact());
         vi.restoreAllMocks();
 
-        // Clear document body to avoid leftover scripts/elements between tests
+        // Clear document body
         document.body.innerHTML = '';
         const root = document.createElement('div');
         root.id = 'root';
@@ -50,25 +50,10 @@ describe('LoginPage integration tests', () => {
             writable: true
         });
 
-        // Mock $Lightning on window
-        (window as any).$Lightning = {
-            use: vi.fn((_appName, callback, _endpoint) => {
-                callback();
-            }),
-            createComponent: vi.fn((_componentName, _attributes, containerId, callback) => {
-                const container = document.getElementById(containerId);
-                if (container) {
-                    const appEl = document.createElement('lightning-out-application');
-                    const compEl = document.createElement('c-passwordless-login-form');
-                    appEl.appendChild(compEl);
-                    container.appendChild(appEl);
-                }
-                if (callback) callback();
-            })
-        };
+        global.fetch = vi.fn();
     });
 
-    it('renders the login page frame and loads the Salesforce script', () => {
+    it('renders the login page with credentials fields', () => {
         render(
             <Provider store={store}>
                 <AuthProvider>
@@ -81,83 +66,36 @@ describe('LoginPage integration tests', () => {
 
         // Verify title frame is present
         expect(screen.getByText('Community Login')).toBeInTheDocument();
-        expect(screen.getByText('Please sign in using your email OTP')).toBeInTheDocument();
+        expect(screen.getByText('Please sign in using your Salesforce credentials')).toBeInTheDocument();
 
-        // Verify the Salesforce script is appended
-        const script = document.querySelector('script[src*="lightning.out.js"]');
-        expect(script).toBeInTheDocument();
+        // Verify fields are present
+        expect(screen.getByLabelText(/Username or Email/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/Password/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument();
     });
 
-    it('creates lightning elements and hides loading spinner on script load', async () => {
-        render(
-            <Provider store={store}>
-                <AuthProvider>
-                    <MemoryRouter>
-                        <LoginPage />
-                    </MemoryRouter>
-                </AuthProvider>
-            </Provider>
-        );
-
-        // Verify loading spinner is visible initially
-        expect(screen.getByText('Initializing secure login client...')).toBeInTheDocument();
-
-        // Find the script and trigger load event
-        const script = document.querySelector('script[src*="lightning.out.js"]');
-        expect(script).toBeInTheDocument();
-
-        fireEvent.load(script!);
-
-        // Verify loading spinner is removed
-        await waitFor(() => {
-            expect(screen.queryByText('Initializing secure login client...')).not.toBeInTheDocument();
-        });
-
-        // Verify the component is created inside the container
-        const cardContainer = document.getElementById('login-form-container');
-        expect(cardContainer).toBeInTheDocument();
-        expect(cardContainer?.querySelector('lightning-out-application')).toBeInTheDocument();
-        expect(cardContainer?.querySelector('c-passwordless-login-form')).toBeInTheDocument();
-    });
-
-    it('performs window redirect when loginsuccess event is dispatched', async () => {
-        render(
-            <Provider store={store}>
-                <AuthProvider>
-                    <MemoryRouter>
-                        <LoginPage />
-                    </MemoryRouter>
-                </AuthProvider>
-            </Provider>
-        );
-
-        const script = document.querySelector('script[src*="lightning.out.js"]');
-        expect(script).toBeInTheDocument();
-
-        fireEvent.load(script!);
-
-        // Verify container is mounted
-        await waitFor(() => {
-            expect(document.querySelector('c-passwordless-login-form')).toBeInTheDocument();
-        });
-
-        // Dispatch LWC custom loginsuccess event on document
-        const loginSuccessEvent = new CustomEvent('loginsuccess', {
-            detail: {
-                result: {
-                    success: true,
-                    redirectUrl: '/home'
-                }
+    it('submits credentials and redirects on success', async () => {
+        const fakeResponse = {
+            success: true,
+            redirectUrl: '/home',
+            user: {
+                id: '005xxx',
+                name: 'Test User',
+                email: 'test@example.com',
+                username: 'test@example.com',
+                firstName: 'Test',
+                lastName: 'User'
             }
+        };
+
+        (global.fetch as any).mockResolvedValue({
+            ok: true,
+            headers: {
+                get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null
+            },
+            json: () => Promise.resolve(fakeResponse)
         });
 
-        document.dispatchEvent(loginSuccessEvent);
-
-        // Check if window location was updated
-        expect(mockLocation.href).toContain('/home');
-    });
-
-    it('displays error if loginsuccess event reports failure', async () => {
         render(
             <Provider store={store}>
                 <AuthProvider>
@@ -168,29 +106,60 @@ describe('LoginPage integration tests', () => {
             </Provider>
         );
 
-        const script = document.querySelector('script[src*="lightning.out.js"]');
-        expect(script).toBeInTheDocument();
+        const usernameInput = screen.getByLabelText(/Username or Email/i);
+        const passwordInput = screen.getByLabelText(/Password/i);
+        const submitButton = screen.getByRole('button', { name: /Sign In/i });
 
-        fireEvent.load(script!);
+        fireEvent.change(usernameInput, { target: { value: 'test@example.com' } });
+        fireEvent.change(passwordInput, { target: { value: 'password123' } });
+
+        fireEvent.click(submitButton);
+
+        // Verify it enters loading state
+        expect(screen.getByText('Signing in...')).toBeInTheDocument();
 
         await waitFor(() => {
-            expect(document.querySelector('c-passwordless-login-form')).toBeInTheDocument();
+            expect(mockLocation.href).toContain('/home');
+        });
+    });
+
+    it('shows error message on failure', async () => {
+        const errorResponse = {
+            success: false,
+            error: 'Invalid username or password'
+        };
+
+        (global.fetch as any).mockResolvedValue({
+            ok: false,
+            status: 401,
+            headers: {
+                get: (name: string) => name.toLowerCase() === 'content-type' ? 'application/json' : null
+            },
+            json: () => Promise.resolve(errorResponse)
         });
 
-        // Dispatch LWC custom loginsuccess event indicating failure
-        const loginFailEvent = new CustomEvent('loginsuccess', {
-            detail: {
-                result: {
-                    success: false
-                }
-            }
-        });
+        render(
+            <Provider store={store}>
+                <AuthProvider>
+                    <MemoryRouter>
+                        <LoginPage />
+                    </MemoryRouter>
+                </AuthProvider>
+            </Provider>
+        );
 
-        document.dispatchEvent(loginFailEvent);
+        const usernameInput = screen.getByLabelText(/Username or Email/i);
+        const passwordInput = screen.getByLabelText(/Password/i);
+        const submitButton = screen.getByRole('button', { name: /Sign In/i });
 
-        // Check if error message is displayed
+        fireEvent.change(usernameInput, { target: { value: 'test@example.com' } });
+        fireEvent.change(passwordInput, { target: { value: 'wrongpassword' } });
+
+        fireEvent.click(submitButton);
+
         await waitFor(() => {
-            expect(screen.getByText('Login verification failed. Please try again.')).toBeInTheDocument();
+            expect(screen.getByText('Invalid username or password')).toBeInTheDocument();
         });
     });
 });
+

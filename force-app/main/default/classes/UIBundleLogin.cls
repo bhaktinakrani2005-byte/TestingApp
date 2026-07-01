@@ -31,7 +31,7 @@ global without sharing class UIBundleLogin {
       List<User> users = [
         SELECT Username
         FROM User
-        WHERE Email = :inputEmail AND IsActive = TRUE AND IsPortalEnabled = TRUE
+        WHERE Email = :inputEmail AND IsActive = TRUE
         ORDER BY ContactId DESC NULLS LAST
         LIMIT 1
       ];
@@ -60,6 +60,15 @@ global without sharing class UIBundleLogin {
       }
 
       if (loginResult != null) {
+        List<User> loggedInUsers = [
+          SELECT Id, FirstName, LastName, Email, Username, UserType
+          FROM User
+          WHERE Username = :username AND IsActive = TRUE
+          LIMIT 1
+        ];
+        if (!loggedInUsers.isEmpty()) {
+          return new SuccessLoginResponse(loginResult.getUrl(), loggedInUsers[0]);
+        }
         return new SuccessLoginResponse(loginResult.getUrl());
       } else {
         RestContext.response.statusCode = 401;
@@ -104,15 +113,41 @@ global without sharing class UIBundleLogin {
   global abstract class LoginResponse {
   }
 
+  global class UserPayload {
+    global String id;
+    global String name;
+    global String email;
+    global String username;
+    global String firstName;
+    global String lastName;
+    global String userType;
+
+    global UserPayload(User u) {
+      this.id = u.Id;
+      this.name = (u.FirstName == null ? '' : u.FirstName) + ' ' + (u.LastName == null ? '' : u.LastName);
+      this.email = u.Email;
+      this.username = u.Username;
+      this.firstName = u.FirstName;
+      this.lastName = u.LastName;
+      this.userType = u.UserType;
+    }
+  }
+
   /**
-   * Success response with redirect URL.
+   * Success response with redirect URL and user details.
    */
   global class SuccessLoginResponse extends LoginResponse {
     global Boolean success = true;
     global String redirectUrl;
+    global UserPayload user;
 
     global SuccessLoginResponse(String redirectUrl) {
       this.redirectUrl = redirectUrl;
+    }
+
+    global SuccessLoginResponse(String redirectUrl, User u) {
+      this.redirectUrl = redirectUrl;
+      this.user = new UserPayload(u);
     }
   }
 

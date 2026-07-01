@@ -19,7 +19,9 @@ node_modules/
 **/test-results/**
 .DS_Store
 # Allow CORS configurations to be deployed
-# force-app/main/default/corsWhitelistOrigins/
+force-app/main/default/corsWhitelistOrigins/
+force-app/main/default/networks/
+force-app/main/default/sites/
 
 # Ignore UIBundle source and configuration files explicitly
 force-app/main/default/uiBundles/TestingApp/src/
@@ -51,4 +53,5 @@ force-app/main/default/uiBundles/TestingApp/index.html
 
 # Ignore TempBundle entirely to avoid metadata deployment errors since it has no build output
 force-app/main/default/uiBundles/TempBundle/
-!**/uiBundles/TestingApp/dist/**
+!force-app/main/default/uiBundles/TestingApp/dist/
+!force-app/main/default/uiBundles/TestingApp/dist/**

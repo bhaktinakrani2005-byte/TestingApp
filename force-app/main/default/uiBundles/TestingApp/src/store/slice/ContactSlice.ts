@@ -135,20 +135,43 @@ export interface LoginCredentials {
 
 // getApiEndpoint is deprecated and unused since session is now checked via GraphQL
 
-const getAuthApiEndpoint = (): string => {
-  let base = getDynamicBasePath() ||
-             (globalThis as any).SFDC_ENV?.instance || '';
-             
-  if (base) {
-    if (!base.startsWith('/')) {
-      base = '/' + base;
+// const getAuthApiEndpoint = (): string => {
+//   const isLocalhost = typeof window !== 'undefined' && 
+//     window.location && 
+//     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+//   if (isLocalhost) {
+//     const instanceUrl = getDynamicInstanceUrl();
+//     return `${instanceUrl.replace(/\/+$/, '')}/services/apexrest/auth/login`;
+//   }
+//   return '/services/apexrest/auth/login';
+// };
+
+// ─── Step 1: Get CSRF Token first ────────────────────────────────────────────
+const getCsrfToken = async (): Promise<string> => {
+    const basePath = getDynamicBasePath();
+    
+    try {
+        const res = await fetch(
+            `${basePath}/services/data/v66.0/ui-api/session/csrf`,
+            {
+                method: 'GET',
+                credentials: 'include', // important
+                cache: 'no-store',
+                headers: { 'Content-Type': 'application/json' }
+            }
+        );
+        const data = await res.json();
+        return data.csrfToken || data.token || '';
+    } catch (e) {
+        console.error('CSRF fetch failed:', e);
+        return '';
     }
-    base = base.replace(/\/+$/, '');
-  } else {
-    base = '/TestingAppvforcesite';
-  }
-  
-  return `${base}/services/apexrest/auth/login`;
+};
+
+const getAuthApiEndpoint = (): string => {
+    const basePath = getDynamicBasePath();
+    return `${basePath}/services/apexrest/auth/login`;
 };
 
 
@@ -224,14 +247,18 @@ export const fetchUser = createAsyncThunk<
     const apiEndpoint = getAuthApiEndpoint();
     console.log('Login API endpoint:', apiEndpoint);
 
+    const csrfToken = await getCsrfToken();
+    console.log('CSRF Token:', csrfToken);
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
+      'X-CSRF-Token':     csrfToken,
     };
 
     const response = await fetch(apiEndpoint, {
       method: 'POST',
       headers,
-      credentials: 'omit',
+      credentials: 'include',
       body: JSON.stringify({
         email: credentials.username,
         password: credentials.password,
@@ -256,16 +283,16 @@ export const fetchUser = createAsyncThunk<
     if (typeof data === 'string') {
       data = JSON.parse(data);
     }
-    if (data.success) {
-      data.user = {
-        id: data.user?.id || '',
-        name: data.user?.name || credentials.username,
-        email: data.user?.email || '',
-        username: data.user?.username || credentials.username,
-        firstName: data.user?.firstName || '',
-        lastName: data.user?.lastName || ''
-      };
+
+    if (typeof window !== 'undefined' && typeof window.caches !== 'undefined') {
+      try {
+        await window.caches.delete('@salesforce/sdk-data_v1');
+        console.log('CSRF cache cleared successfully on login');
+      } catch (cacheErr) {
+        console.error('Failed to clear CSRF cache:', cacheErr);
+      }
     }
+
     return data;
   } catch (e: any) {
     console.log('error is',e.message);
@@ -541,10 +568,6 @@ export const ContactSlice = createSlice({
             })
             .addCase(fetchUser.fulfilled, (state, action) => {
                 state.loading = false;
-                // Store the authenticated user if we have it
-                if (action.payload.success && action.payload.user) {
-                    state.currentUser = action.payload.user as any;
-                }
                 // Keep redirect URL for navigation
                 (state as any).redirectUrl = action.payload.redirectUrl;
             })
